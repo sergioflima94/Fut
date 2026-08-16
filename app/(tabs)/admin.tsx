@@ -35,11 +35,42 @@ export default function AdminScreen() {
   return (
     <Screen>
       <Text style={styles.title}>Administração</Text>
+      <PeladaInfoSection />
       <AdminsSection />
       <FieldsSection />
       <SchedulesSection />
       <PunishmentsSection />
     </Screen>
+  );
+}
+
+function PeladaInfoSection() {
+  const pelada = useAppStore((s) => s.peladas[0]);
+  const updatePeladaInfo = useAppStore((s) => s.updatePeladaInfo);
+
+  const [name, setName] = useState(pelada.name);
+  const [description, setDescription] = useState(pelada.description ?? '');
+
+  const dirty = name.trim() !== pelada.name || description.trim() !== (pelada.description ?? '');
+
+  function handleSave() {
+    if (!name.trim()) return;
+    updatePeladaInfo(pelada.id, { name: name.trim(), description: description.trim() || null });
+  }
+
+  return (
+    <Card style={styles.section}>
+      <Text style={styles.sectionTitle}>Sobre a pelada</Text>
+      <TextField label="Nome do grupo" value={name} onChangeText={setName} placeholder="Ex: Pelada dos Amigos - Quintas" />
+      <TextField
+        label="Descrição"
+        value={description}
+        onChangeText={setDescription}
+        placeholder="Ex: Society toda quinta às 20h, time completo"
+        multiline
+      />
+      <Button label="Salvar" small onPress={handleSave} disabled={!dirty || !name.trim()} />
+    </Card>
   );
 }
 

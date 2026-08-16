@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
-import { colors, spacing } from '@/constants/theme';
+import { CARD_STYLES } from '@/constants/cardStyles';
+import { colors, radius, spacing } from '@/constants/theme';
 import { formatGameDateShort } from '@/lib/format';
 import { pickProfilePhoto } from '@/lib/photo';
 import { punishmentLabel } from '@/lib/punishment';
@@ -25,6 +26,7 @@ export default function PerfilScreen() {
   const attendances = useAppStore((s) => s.attendances);
   const punishments = useAppStore(useShallow((s) => s.punishments.filter((p) => p.playerId === currentPlayerId)));
   const setPlayerPhoto = useAppStore((s) => s.setPlayerPhoto);
+  const setPlayerCardStyle = useAppStore((s) => s.setPlayerCardStyle);
   const logout = useAuthStore((s) => s.logout);
   const [pickingPhoto, setPickingPhoto] = useState(false);
 
@@ -41,7 +43,15 @@ export default function PerfilScreen() {
   return (
     <Screen>
       <Pressable style={styles.cardCenter} onPress={handleChangePhoto} disabled={pickingPhoto}>
-        <PlayerCard name={player.name} nickname={player.nickname} photoUrl={player.avatarUrl} position={player.preferredPosition} overall={overall} width={190} />
+        <PlayerCard
+          name={player.name}
+          nickname={player.nickname}
+          photoUrl={player.avatarUrl}
+          cardStyleId={player.cardStyleId}
+          position={player.preferredPosition}
+          overall={overall}
+          width={190}
+        />
         <View style={styles.changePhotoRow}>
           {pickingPhoto ? (
             <ActivityIndicator size="small" color={colors.primary} />
@@ -54,6 +64,25 @@ export default function PerfilScreen() {
 
       <Text style={styles.name}>{player.name}</Text>
       {player.nickname && <Text style={styles.nickname}>"{player.nickname}"</Text>}
+
+      <Card style={styles.section}>
+        <Text style={styles.sectionTitle}>Personalizar carta</Text>
+        <View style={styles.swatchRow}>
+          {CARD_STYLES.map((style) => {
+            const selected = (player.cardStyleId ?? 'default') === style.id;
+            const swatchColor = style.colors ? style.colors[0] : colors.textFaint;
+            return (
+              <Pressable
+                key={style.id}
+                onPress={() => setPlayerCardStyle(currentPlayerId, style.id === 'default' ? null : style.id)}
+                style={[styles.swatch, { backgroundColor: swatchColor }, selected && styles.swatchSelected]}
+              >
+                {selected && <Ionicons name="checkmark" size={16} color={colors.white} />}
+              </Pressable>
+            );
+          })}
+        </View>
+      </Card>
 
       {pendingGames.length > 0 && (
         <Card style={styles.section}>
@@ -160,5 +189,22 @@ const styles = StyleSheet.create({
   punishmentSub: {
     color: colors.textMuted,
     fontSize: 12,
+  },
+  swatchRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  swatch: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  swatchSelected: {
+    borderColor: colors.text,
   },
 });

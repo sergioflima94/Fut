@@ -19,7 +19,10 @@ export default function AgendaScreen() {
 
   return (
     <Screen>
-      <Text style={styles.peladaName}>{pelada.name}</Text>
+      <View style={styles.peladaHeader}>
+        <Text style={styles.peladaName}>{pelada.name}</Text>
+        {pelada.description && <Text style={styles.peladaDescription}>{pelada.description}</Text>}
+      </View>
       <Text style={styles.sectionTitle}>Próximos jogos</Text>
       {upcoming.length === 0 ? (
         <View style={styles.empty}>
@@ -42,11 +45,18 @@ export default function AgendaScreen() {
 }
 
 const styles = StyleSheet.create({
+  peladaHeader: {
+    marginBottom: spacing.lg,
+  },
   peladaName: {
     color: colors.text,
     fontSize: 22,
     fontWeight: '800',
-    marginBottom: spacing.lg,
+  },
+  peladaDescription: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginTop: 2,
   },
   sectionTitle: {
     color: colors.textMuted,

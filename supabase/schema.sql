@@ -14,6 +14,7 @@ create table players (
   name text not null,
   nickname text,
   avatar_url text,
+  card_style_id text,
   phone text,
   preferred_position text not null default 'line' check (preferred_position in ('goalkeeper', 'line')),
   created_at timestamptz not null default now()

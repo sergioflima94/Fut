@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { getCardStyle } from '@/constants/cardStyles';
 import { colors, radius, spacing } from '@/constants/theme';
 import { overallTier } from '@/lib/ratings';
 import type { PlayerOverall } from '@/types';
@@ -11,23 +12,27 @@ interface PlayerCardProps {
   name: string;
   nickname?: string | null;
   photoUrl?: string | null;
+  cardStyleId?: string | null;
   position: 'goalkeeper' | 'line';
   overall: PlayerOverall;
   width?: number;
 }
 
-export function PlayerCard({ name, nickname, photoUrl, position, overall, width = 160 }: PlayerCardProps) {
+export function PlayerCard({ name, nickname, photoUrl, cardStyleId, position, overall, width = 160 }: PlayerCardProps) {
   const tier = overallTier(overall.overall);
+  const customStyle = getCardStyle(cardStyleId ?? null);
+  const [gradientTop, gradientBase] = customStyle.colors ?? [tier.color, colors.bgElevated];
+  const borderColor = customStyle.colors ? customStyle.colors[0] : tier.color;
   const height = width * 1.35;
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto = !!photoUrl && !photoFailed;
 
   return (
     <LinearGradient
-      colors={[tier.color, colors.bgElevated]}
+      colors={[gradientTop, gradientBase]}
       start={{ x: 0.1, y: 0 }}
       end={{ x: 0.9, y: 1 }}
-      style={[styles.card, { width, height, borderColor: tier.color }]}
+      style={[styles.card, { width, height, borderColor }]}
     >
       <View style={styles.header}>
         <Text style={styles.overall}>{overall.overall}</Text>

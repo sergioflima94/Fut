@@ -24,6 +24,8 @@ export interface Player {
   avatarUrl: string | null;
   phone: string | null;
   preferredPosition: PlayerPosition;
+  /** Estilo de cor/fundo escolhido pelo jogador para a própria carta. null = usa a cor da faixa (bronze/prata/ouro/especial). */
+  cardStyleId: string | null;
   createdAt: string;
 }
 
