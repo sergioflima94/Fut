@@ -105,9 +105,13 @@ fluxos de demonstração para validar a experiência antes de integrar algo de v
   é que a assinatura seja **gerenciada pela App Store / Google Play** (cobrança,
   renovação e cancelamento ficam por conta delas, não do nosso app) — por isso o botão
   "Gerenciar assinatura" já abre a tela nativa de assinaturas de cada loja.
-- **Anúncios** (`src/components/AdBanner.tsx`): banners fixos ("house ads") exibidos
-  para quem não é Premium nem já pagou o rateio de algum jogo (`src/hooks/useIsAdFree.ts`),
-  em Agenda e Elenco. Não é um SDK de anúncios real.
+- **Anúncios** (`src/components/AdBanner.tsx`): banner do **AdMob real**
+  (`react-native-google-mobile-ads`, via `src/lib/ads.ts`) para quem não é Premium
+  nem já pagou o rateio de algum jogo (`src/hooks/useIsAdFree.ts`), em Agenda e
+  Elenco. Sem `.env` preenchido, usa os IDs de **teste** do Google (anúncios de
+  teste, sem receita real) — veja "Configurar o AdMob" abaixo. No **web** o SDK não
+  tem suporte (é nativo), então cai automaticamente num "house ad" local
+  (`src/lib/ads.web.ts`).
 - **Rateio do jogo / "vaquinha"** (`src/components/PaymentSplitSection.tsx`): o admin
   define o custo da quadra (na agenda ou direto no jogo), o app calcula o valor por
   pessoa e cada jogador confirmado pode "marcar como pago". O admin também marca
@@ -119,11 +123,32 @@ fluxos de demonstração para validar a experiência antes de integrar algo de v
 |---|---|---|
 | Assinatura Premium | `PremiumSection.handleConfirm` → chamar a compra nativa real (IAP) e só marcar `premiumUntil` a partir do webhook/callback do provedor confirmando a assinatura (não do clique no botão) | [RevenueCat](https://www.revenuecat.com/) por cima de IAP da App Store/Google Play — é quem sincroniza `premiumUntil`/auto-renovação de verdade |
 | Rateio da quadra (Pix/cartão) | `PaymentSplitSection` → em vez de `setPaymentStatus` direto, abrir um checkout (Pix Copia-e-Cola, link de pagamento) e só marcar `paid` via webhook confirmando o pagamento | [Mercado Pago](https://www.mercadopago.com.br/developers) ou [Stripe](https://stripe.com/br) (ambos têm Pix) |
-| Anúncios | Trocar `AdBanner` por um componente nativo de anúncios | [react-native-google-mobile-ads](https://docs.page/invertase/react-native-google-mobile-ads) (AdMob) — requer EAS Build/dev client, não funciona no Expo Go |
+| Anúncios | Já integrado — só falta configurar sua conta AdMob (veja abaixo) | [react-native-google-mobile-ads](https://docs.page/invertase/react-native-google-mobile-ads) (AdMob) — requer EAS Build/dev client, não funciona no Expo Go |
 
 Qualquer integração de pagamento real deve rodar no backend (Supabase Edge Functions,
 por exemplo) para validar webhooks e nunca confiar apenas no que o app cliente diz —
 hoje, como tudo é local/mock, isso ainda não existe.
+
+### Configurar o AdMob
+
+1. Crie um app no [console do AdMob](https://apps.admob.com/) (um para Android, um
+   para iOS) e uma unidade de anúncio do tipo **Banner** em cada um.
+2. Copie `.env.example` para `.env` e preencha:
+   ```
+   EXPO_PUBLIC_ADMOB_ANDROID_APP_ID=ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY
+   EXPO_PUBLIC_ADMOB_IOS_APP_ID=ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY
+   EXPO_PUBLIC_ADMOB_BANNER_ID_ANDROID=ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ
+   EXPO_PUBLIC_ADMOB_BANNER_ID_IOS=ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ
+   ```
+   Deixando em branco, o app usa os IDs de teste do Google (`TestIds.BANNER`) e
+   os App IDs de teste já configurados em `app.config.js`.
+3. Como o App ID é lido em tempo de build nativo (não só no bundle JS), depois de
+   mudar o `.env` é preciso gerar um novo build (`eas build`) ou rodar
+   `npx expo prebuild --clean` antes de testar localmente — **não funciona no Expo
+   Go**, só em dev client / build gerado pelo EAS.
+4. Se for buildar pela EAS Build (nuvem), configure essas mesmas variáveis também
+   em *Project settings → Environment variables* no [expo.dev](https://expo.dev),
+   já que o `.env` local não é enviado para o servidor de build.
 
 ## Grupos, convidados e convites
 

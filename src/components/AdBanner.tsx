@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '@/constants/theme';
+import { BannerAd, BannerAdSize, getBannerAdUnitId, isAdsSupported } from '@/lib/ads';
 
 const HOUSE_ADS = [
   { title: 'Chuteira nova em promoção', subtitle: 'Até 30% off na loja parceira da pelada' },
@@ -12,11 +13,13 @@ const HOUSE_ADS = [
 ];
 
 /**
- * Banner de anúncio (house ad) exibido apenas para jogadores não-Premium.
- * Em produção, troque o conteúdo por um SDK de anúncios real (ex.: AdMob) — ver README.
+ * Banner de anúncio exibido apenas para jogadores não-Premium.
+ * Em build nativo (EAS Build/dev client) usa o SDK real do AdMob
+ * (ver src/lib/ads.ts, IDs configuráveis em .env). No web, que o AdMob
+ * não suporta, cai num "house ad" local — ver src/lib/ads.web.ts.
  */
 export function AdBanner() {
-  const ad = useMemo(() => HOUSE_ADS[Math.floor(Math.random() * HOUSE_ADS.length)], []);
+  const houseAd = useMemo(() => HOUSE_ADS[Math.floor(Math.random() * HOUSE_ADS.length)], []);
 
   return (
     <View style={styles.wrap}>
@@ -26,13 +29,18 @@ export function AdBanner() {
           <Text style={styles.removeAds}>Premium ou pague um jogo p/ remover</Text>
         </Pressable>
       </View>
-      <View style={styles.adBody}>
-        <Ionicons name="megaphone-outline" size={20} color={colors.textMuted} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{ad.title}</Text>
-          <Text style={styles.subtitle}>{ad.subtitle}</Text>
+
+      {isAdsSupported ? (
+        <BannerAd unitId={getBannerAdUnitId()} size={BannerAdSize.BANNER} />
+      ) : (
+        <View style={styles.adBody}>
+          <Ionicons name="megaphone-outline" size={20} color={colors.textMuted} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>{houseAd.title}</Text>
+            <Text style={styles.subtitle}>{houseAd.subtitle}</Text>
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }
