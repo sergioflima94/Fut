@@ -36,6 +36,12 @@
           "image": "./assets/icon.png",
           "imageWidth": 160
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O app usa suas fotos para você escolher a foto do seu perfil de jogador."
+        }
       ]
     ],
     "experiments": {

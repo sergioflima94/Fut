@@ -3,6 +3,7 @@ import type { DrawMethod } from '@/types';
 export interface DraftPlayer {
   id: string;
   name: string;
+  photoUrl?: string | null;
   overall: number; // 0-99, usado no método "por nota"
   isGoalkeeper: boolean;
   confirmedOrder?: number | null;

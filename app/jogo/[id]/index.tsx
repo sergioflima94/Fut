@@ -60,6 +60,7 @@ export default function GameDetailScreen() {
   const iAmSuspended = isPlayerSuspended(currentPlayerId, punishments, games, game.id);
 
   const playerName = (playerId: string) => players.find((p) => p.id === playerId)?.name ?? '—';
+  const playerPhoto = (playerId: string) => players.find((p) => p.id === playerId)?.avatarUrl ?? null;
 
   const teamsExist = teams.length > 0;
 
@@ -131,16 +132,19 @@ export default function GameDetailScreen() {
           </View>
         )}
 
-        <PlayerList title="Confirmados" attendances={confirmed} nameOf={playerName} />
+        <PlayerList title="Confirmados" attendances={confirmed} nameOf={playerName} photoOf={playerPhoto} />
         {waitlist.length > 0 && (
           <PlayerList
             title="Lista de espera"
             attendances={waitlist}
             nameOf={playerName}
+            photoOf={playerPhoto}
             action={isAdmin ? { label: 'Promover 1º da fila', onPress: () => promoteFromWaitlist(game.id) } : undefined}
           />
         )}
-        {declined.length > 0 && <PlayerList title="Não vão" attendances={declined} nameOf={playerName} muted />}
+        {declined.length > 0 && (
+          <PlayerList title="Não vão" attendances={declined} nameOf={playerName} photoOf={playerPhoto} muted />
+        )}
       </Card>
 
       {isAdmin && (
@@ -244,12 +248,14 @@ function PlayerList({
   title,
   attendances,
   nameOf,
+  photoOf,
   muted,
   action,
 }: {
   title: string;
   attendances: Attendance[];
   nameOf: (id: string) => string;
+  photoOf: (id: string) => string | null;
   muted?: boolean;
   action?: { label: string; onPress: () => void };
 }) {
@@ -267,7 +273,7 @@ function PlayerList({
       </View>
       {attendances.map((a) => (
         <View key={a.id} style={styles.playerRow}>
-          <Avatar name={nameOf(a.playerId)} size={30} />
+          <Avatar name={nameOf(a.playerId)} photoUrl={photoOf(a.playerId)} size={30} />
           <Text style={[styles.playerName, muted && { color: colors.textFaint }]}>{nameOf(a.playerId)}</Text>
         </View>
       ))}

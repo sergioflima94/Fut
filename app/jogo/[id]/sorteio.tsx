@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
+import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
@@ -47,6 +48,7 @@ export default function SorteioScreen() {
       return {
         id: player.id,
         name: player.name,
+        photoUrl: player.avatarUrl,
         overall: overalls[player.id]?.overall ?? 60,
         isGoalkeeper: player.preferredPosition === 'goalkeeper',
         confirmedOrder: a.confirmedOrder ?? idx,
@@ -104,11 +106,14 @@ export default function SorteioScreen() {
                 {method === 'rating' && <Text style={styles.teamOverall}>força {team.totalOverall}</Text>}
               </View>
               {team.players.map((p) => (
-                <Text key={p.id} style={styles.playerLine}>
-                  {p.isGoalkeeper ? '🧤 ' : '• '}
-                  {p.name}
-                  {method === 'rating' ? ` (${p.overall})` : ''}
-                </Text>
+                <View key={p.id} style={styles.playerRow}>
+                  <Avatar name={p.name} photoUrl={p.photoUrl} size={22} />
+                  <Text style={styles.playerLine}>
+                    {p.isGoalkeeper ? '🧤 ' : ''}
+                    {p.name}
+                    {method === 'rating' ? ` (${p.overall})` : ''}
+                  </Text>
+                </View>
               ))}
             </Card>
           ))}
@@ -153,9 +158,14 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 12,
   },
+  playerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 1,
+  },
   playerLine: {
     color: colors.textMuted,
     fontSize: 13,
-    paddingVertical: 1,
   },
 });

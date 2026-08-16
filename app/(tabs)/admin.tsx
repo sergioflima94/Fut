@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
+import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -57,7 +58,10 @@ function AdminsSection() {
         if (!player) return null;
         return (
           <View key={m.playerId} style={styles.row}>
-            <Text style={styles.rowText}>{player.name}</Text>
+            <View style={styles.rowWithAvatar}>
+              <Avatar name={player.name} photoUrl={player.avatarUrl} size={28} />
+              <Text style={styles.rowText}>{player.name}</Text>
+            </View>
             {m.role === 'admin' ? (
               <View style={styles.rowActions}>
                 <Badge label="Admin" color={colors.primary} />
@@ -248,7 +252,10 @@ function PunishmentsSection() {
             const player = players.find((pl) => pl.id === p.playerId);
             return (
               <View key={p.id} style={styles.row}>
-                <Text style={styles.rowText}>{player?.name}</Text>
+                <View style={styles.rowWithAvatar}>
+                  {player && <Avatar name={player.name} photoUrl={player.avatarUrl} size={28} />}
+                  <Text style={styles.rowText}>{player?.name}</Text>
+                </View>
                 <Badge
                   label={p.suspendedUntilGameCount > 0 ? `Suspenso ${p.suspendedUntilGameCount} jogo(s)` : `Aviso (nível ${p.strikeLevel})`}
                   color={p.suspendedUntilGameCount > 0 ? colors.danger : colors.warning}
@@ -306,6 +313,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  rowWithAvatar: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   rowText: {

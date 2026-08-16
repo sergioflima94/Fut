@@ -27,7 +27,14 @@ export default function JogadoresScreen() {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <View style={styles.cardWrap}>
-            <PlayerCard name={item.name} nickname={item.nickname} position={item.preferredPosition} overall={overalls[item.id]} width={150} />
+            <PlayerCard
+              name={item.name}
+              nickname={item.nickname}
+              photoUrl={item.avatarUrl}
+              position={item.preferredPosition}
+              overall={overalls[item.id]}
+              width={150}
+            />
           </View>
         )}
       />

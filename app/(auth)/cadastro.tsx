@@ -1,21 +1,35 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { colors, radius, spacing } from '@/constants/theme';
+import { pickProfilePhoto } from '@/lib/photo';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { PlayerPosition } from '@/types';
 
 export default function CadastroScreen() {
   const login = useAuthStore((s) => s.login);
+  const currentPlayerId = useAppStore((s) => s.currentPlayerId);
   const updateProfile = useAppStore((s) => s.updateCurrentPlayerProfile);
+  const setPlayerPhoto = useAppStore((s) => s.setPlayerPhoto);
 
   const [name, setName] = useState('');
   const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState('');
   const [position, setPosition] = useState<PlayerPosition>('line');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [pickingPhoto, setPickingPhoto] = useState(false);
+
+  async function handlePickPhoto() {
+    setPickingPhoto(true);
+    const uri = await pickProfilePhoto();
+    if (uri) setPhotoUri(uri);
+    setPickingPhoto(false);
+  }
 
   function handleSubmit() {
     updateProfile({
@@ -24,14 +38,23 @@ export default function CadastroScreen() {
       phone: phone.trim() || null,
       preferredPosition: position,
     });
+    if (photoUri) setPlayerPhoto(currentPlayerId, photoUri);
     login();
     router.replace('/(tabs)');
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
       <Text style={styles.title}>Criar conta</Text>
       <Text style={styles.subtitle}>Cadastre seu perfil de jogador para entrar nas peladas</Text>
+
+      <Pressable style={styles.photoPicker} onPress={handlePickPhoto} disabled={pickingPhoto}>
+        <Avatar name={name || '?'} photoUrl={photoUri} size={72} />
+        <View style={styles.photoPickerBadge}>
+          {pickingPhoto ? <ActivityIndicator size="small" color={colors.bg} /> : <Ionicons name="camera" size={14} color={colors.bg} />}
+        </View>
+      </Pressable>
+      <Text style={styles.photoPickerLabel}>{pickingPhoto ? 'Abrindo galeria...' : 'Toque para adicionar uma foto'}</Text>
 
       <Text style={styles.label}>Nome completo</Text>
       <TextInput value={name} onChangeText={setName} placeholder="Seu nome" placeholderTextColor={colors.textFaint} style={styles.input} />
@@ -60,7 +83,7 @@ export default function CadastroScreen() {
 
       <Button label="Criar conta e entrar" onPress={handleSubmit} disabled={!name.trim()} style={{ marginTop: spacing.xl }} />
       <Button label="Voltar" onPress={() => router.back()} variant="ghost" style={{ marginTop: spacing.sm }} />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -68,8 +91,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  containerContent: {
     padding: spacing.xl,
+    flexGrow: 1,
     justifyContent: 'center',
+  },
+  photoPicker: {
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+  },
+  photoPickerBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.bg,
+  },
+  photoPickerLabel: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: 12,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
   },
   title: {
     fontSize: 26,

@@ -1,4 +1,6 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '@/constants/theme';
@@ -8,14 +10,17 @@ import type { PlayerOverall } from '@/types';
 interface PlayerCardProps {
   name: string;
   nickname?: string | null;
+  photoUrl?: string | null;
   position: 'goalkeeper' | 'line';
   overall: PlayerOverall;
   width?: number;
 }
 
-export function PlayerCard({ name, nickname, position, overall, width = 160 }: PlayerCardProps) {
+export function PlayerCard({ name, nickname, photoUrl, position, overall, width = 160 }: PlayerCardProps) {
   const tier = overallTier(overall.overall);
   const height = width * 1.35;
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const showPhoto = !!photoUrl && !photoFailed;
 
   return (
     <LinearGradient
@@ -31,15 +36,25 @@ export function PlayerCard({ name, nickname, position, overall, width = 160 }: P
 
       <View style={styles.avatarWrap}>
         <View style={styles.avatarCircle}>
-          <Text style={styles.avatarInitials}>
-            {name
-              .trim()
-              .split(/\s+/)
-              .slice(0, 2)
-              .map((p) => p[0])
-              .join('')
-              .toUpperCase()}
-          </Text>
+          {showPhoto ? (
+            <Image
+              source={{ uri: photoUrl }}
+              style={styles.avatarPhoto}
+              contentFit="cover"
+              transition={150}
+              onError={() => setPhotoFailed(true)}
+            />
+          ) : (
+            <Text style={styles.avatarInitials}>
+              {name
+                .trim()
+                .split(/\s+/)
+                .slice(0, 2)
+                .map((p) => p[0])
+                .join('')
+                .toUpperCase()}
+            </Text>
+          )}
         </View>
       </View>
 
@@ -105,6 +120,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.4)',
+    overflow: 'hidden',
+  },
+  avatarPhoto: {
+    width: '100%',
+    height: '100%',
   },
   avatarInitials: {
     color: colors.white,

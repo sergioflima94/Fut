@@ -22,23 +22,26 @@ const nextWeekday = (dayOfWeek: number, hour: number, minute: number) => {
   return d;
 };
 
+/** Fotos de exemplo (serviço público de avatares aleatórios) só para o modo demonstração. */
+const demoPhoto = (seed: number) => `https://i.pravatar.cc/300?img=${seed}`;
+
 export const MOCK_PLAYERS: Player[] = [
   { id: 'p1', authUserId: 'auth-1', name: 'Você', nickname: null, avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p2', authUserId: null, name: 'Bruno Silva', nickname: 'Brunão', avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p3', authUserId: null, name: 'Carlos Eduardo', nickname: 'Cadu', avatarUrl: null, phone: null, preferredPosition: 'goalkeeper', createdAt: iso(now) },
-  { id: 'p4', authUserId: null, name: 'Diego Alves', nickname: null, avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p5', authUserId: null, name: 'Eduardo Santos', nickname: 'Duda', avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p6', authUserId: null, name: 'Fábio Costa', nickname: null, avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p7', authUserId: null, name: 'Gabriel Souza', nickname: 'Gabigol', avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p8', authUserId: null, name: 'Henrique Lima', nickname: null, avatarUrl: null, phone: null, preferredPosition: 'goalkeeper', createdAt: iso(now) },
-  { id: 'p9', authUserId: null, name: 'Igor Martins', nickname: null, avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p10', authUserId: null, name: 'João Pedro', nickname: 'JP', avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p11', authUserId: null, name: 'Lucas Ferreira', nickname: null, avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p12', authUserId: null, name: 'Marcelo Rocha', nickname: null, avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p13', authUserId: null, name: 'Nathan Oliveira', nickname: null, avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p14', authUserId: null, name: 'Otávio Ramos', nickname: null, avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p15', authUserId: null, name: 'Paulo Vitor', nickname: 'PV', avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p16', authUserId: null, name: 'Rafael Almeida', nickname: null, avatarUrl: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p2', authUserId: null, name: 'Bruno Silva', nickname: 'Brunão', avatarUrl: demoPhoto(12), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p3', authUserId: null, name: 'Carlos Eduardo', nickname: 'Cadu', avatarUrl: demoPhoto(13), phone: null, preferredPosition: 'goalkeeper', createdAt: iso(now) },
+  { id: 'p4', authUserId: null, name: 'Diego Alves', nickname: null, avatarUrl: demoPhoto(14), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p5', authUserId: null, name: 'Eduardo Santos', nickname: 'Duda', avatarUrl: demoPhoto(15), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p6', authUserId: null, name: 'Fábio Costa', nickname: null, avatarUrl: demoPhoto(17), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p7', authUserId: null, name: 'Gabriel Souza', nickname: 'Gabigol', avatarUrl: demoPhoto(18), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p8', authUserId: null, name: 'Henrique Lima', nickname: null, avatarUrl: demoPhoto(19), phone: null, preferredPosition: 'goalkeeper', createdAt: iso(now) },
+  { id: 'p9', authUserId: null, name: 'Igor Martins', nickname: null, avatarUrl: demoPhoto(20), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p10', authUserId: null, name: 'João Pedro', nickname: 'JP', avatarUrl: demoPhoto(21), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p11', authUserId: null, name: 'Lucas Ferreira', nickname: null, avatarUrl: demoPhoto(22), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p12', authUserId: null, name: 'Marcelo Rocha', nickname: null, avatarUrl: demoPhoto(23), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p13', authUserId: null, name: 'Nathan Oliveira', nickname: null, avatarUrl: demoPhoto(24), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p14', authUserId: null, name: 'Otávio Ramos', nickname: null, avatarUrl: demoPhoto(25), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p15', authUserId: null, name: 'Paulo Vitor', nickname: 'PV', avatarUrl: demoPhoto(26), phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p16', authUserId: null, name: 'Rafael Almeida', nickname: null, avatarUrl: demoPhoto(27), phone: null, preferredPosition: 'line', createdAt: iso(now) },
 ];
 
 export const CURRENT_PLAYER_ID = 'p1';

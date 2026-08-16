@@ -70,7 +70,7 @@ export default function AvaliarScreen() {
         return (
           <Card key={a.playerId} style={styles.card}>
             <View style={styles.header}>
-              <Avatar name={player.name} size={36} />
+              <Avatar name={player.name} photoUrl={player.avatarUrl} size={36} />
               <Text style={styles.name}>{player.nickname || player.name}</Text>
             </View>
             <StarRating label="Ataque" value={s.attack} onChange={(v) => updateScore(a.playerId, 'attack', v)} />

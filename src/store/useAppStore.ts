@@ -92,6 +92,7 @@ interface AppState {
   isAdmin: (playerId: string, peladaId: string) => boolean;
 
   updateCurrentPlayerProfile: (input: { name: string; nickname: string | null; preferredPosition: Player['preferredPosition']; phone: string | null }) => void;
+  setPlayerPhoto: (playerId: string, photoUrl: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -291,6 +292,12 @@ export const useAppStore = create<AppState>()(
       updateCurrentPlayerProfile: (input) => {
         set((state) => ({
           players: state.players.map((p) => (p.id === state.currentPlayerId ? { ...p, ...input } : p)),
+        }));
+      },
+
+      setPlayerPhoto: (playerId, photoUrl) => {
+        set((state) => ({
+          players: state.players.map((p) => (p.id === playerId ? { ...p, avatarUrl: photoUrl } : p)),
         }));
       },
     }),

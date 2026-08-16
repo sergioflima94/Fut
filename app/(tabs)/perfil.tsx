@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
 import { PlayerCard } from '@/components/PlayerCard';
@@ -10,6 +11,7 @@ import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
 import { colors, spacing } from '@/constants/theme';
 import { formatGameDateShort } from '@/lib/format';
+import { pickProfilePhoto } from '@/lib/photo';
 import { punishmentLabel } from '@/lib/punishment';
 import { computePlayerOverall, getPendingRatingGames } from '@/lib/ratings';
 import { useAppStore } from '@/store/useAppStore';
@@ -22,16 +24,33 @@ export default function PerfilScreen() {
   const games = useAppStore((s) => s.games);
   const attendances = useAppStore((s) => s.attendances);
   const punishments = useAppStore(useShallow((s) => s.punishments.filter((p) => p.playerId === currentPlayerId)));
+  const setPlayerPhoto = useAppStore((s) => s.setPlayerPhoto);
   const logout = useAuthStore((s) => s.logout);
+  const [pickingPhoto, setPickingPhoto] = useState(false);
 
   const overall = computePlayerOverall(currentPlayerId, ratings);
   const pendingGames = getPendingRatingGames(games, attendances, ratings, currentPlayerId);
 
+  async function handleChangePhoto() {
+    setPickingPhoto(true);
+    const uri = await pickProfilePhoto();
+    if (uri) setPlayerPhoto(currentPlayerId, uri);
+    setPickingPhoto(false);
+  }
+
   return (
     <Screen>
-      <View style={styles.cardCenter}>
-        <PlayerCard name={player.name} nickname={player.nickname} position={player.preferredPosition} overall={overall} width={190} />
-      </View>
+      <Pressable style={styles.cardCenter} onPress={handleChangePhoto} disabled={pickingPhoto}>
+        <PlayerCard name={player.name} nickname={player.nickname} photoUrl={player.avatarUrl} position={player.preferredPosition} overall={overall} width={190} />
+        <View style={styles.changePhotoRow}>
+          {pickingPhoto ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Ionicons name="camera" size={14} color={colors.primary} />
+          )}
+          <Text style={styles.changePhotoText}>{pickingPhoto ? 'Abrindo galeria...' : 'Alterar foto'}</Text>
+        </View>
+      </Pressable>
 
       <Text style={styles.name}>{player.name}</Text>
       {player.nickname && <Text style={styles.nickname}>"{player.nickname}"</Text>}
@@ -77,6 +96,17 @@ const styles = StyleSheet.create({
   cardCenter: {
     alignItems: 'center',
     marginTop: spacing.md,
+  },
+  changePhotoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.sm,
+  },
+  changePhotoText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
   },
   name: {
     textAlign: 'center',

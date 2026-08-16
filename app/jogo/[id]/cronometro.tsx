@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, Vibration, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
+import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -75,6 +76,7 @@ export default function CronometroScreen() {
   const teamOf = (teamId: string) => teams.find((t) => t.id === teamId);
   const rosterOf = (teamId: string) => teamPlayers.filter((tp) => tp.teamId === teamId);
   const playerName = (playerId: string) => players.find((p) => p.id === playerId)?.name ?? '—';
+  const playerPhoto = (playerId: string) => players.find((p) => p.id === playerId)?.avatarUrl ?? null;
 
   const [teamAId, teamBId, ...waitingIds] = queue;
   const teamA = teamOf(teamAId);
@@ -120,9 +122,21 @@ export default function CronometroScreen() {
       </Card>
 
       <View style={styles.matchup}>
-        <TeamBox name={teamA?.name} color={teamA?.color} roster={rosterOf(teamAId)} playerName={playerName} />
+        <TeamBox
+          name={teamA?.name}
+          color={teamA?.color}
+          roster={rosterOf(teamAId)}
+          playerName={playerName}
+          playerPhoto={playerPhoto}
+        />
         <Text style={styles.vs}>x</Text>
-        <TeamBox name={teamB?.name} color={teamB?.color} roster={rosterOf(teamBId)} playerName={playerName} />
+        <TeamBox
+          name={teamB?.name}
+          color={teamB?.color}
+          roster={rosterOf(teamBId)}
+          playerName={playerName}
+          playerPhoto={playerPhoto}
+        />
       </View>
 
       {isAdmin && (
@@ -160,20 +174,25 @@ function TeamBox({
   color,
   roster,
   playerName,
+  playerPhoto,
 }: {
   name?: string;
   color?: string;
   roster: { playerId: string; isGoalkeeper: boolean }[];
   playerName: (id: string) => string;
+  playerPhoto: (id: string) => string | null;
 }) {
   return (
     <View style={styles.teamBox}>
       <Badge label={name ?? '—'} color={color ?? colors.primary} />
       {roster.map((r) => (
-        <Text key={r.playerId} style={styles.teamBoxPlayer}>
-          {r.isGoalkeeper ? '🧤 ' : ''}
-          {playerName(r.playerId)}
-        </Text>
+        <View key={r.playerId} style={styles.teamBoxPlayerRow}>
+          <Avatar name={playerName(r.playerId)} photoUrl={playerPhoto(r.playerId)} size={22} />
+          <Text style={styles.teamBoxPlayer}>
+            {r.isGoalkeeper ? '🧤 ' : ''}
+            {playerName(r.playerId)}
+          </Text>
+        </View>
       ))}
     </View>
   );
@@ -227,10 +246,15 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
+  teamBoxPlayerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
   teamBoxPlayer: {
     color: colors.textMuted,
     fontSize: 12,
-    marginTop: 2,
   },
   vs: {
     color: colors.textFaint,
