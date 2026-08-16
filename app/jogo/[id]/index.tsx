@@ -37,9 +37,14 @@ export default function GameDetailScreen() {
   const setGameStatus = useAppStore((s) => s.setGameStatus);
   const registerPunishment = useAppStore((s) => s.registerPunishment);
   const promoteFromWaitlist = useAppStore((s) => s.promoteFromWaitlist);
+  const setGameMatchMinutes = useAppStore((s) => s.setGameMatchMinutes);
+  const setGameGoalLimit = useAppStore((s) => s.setGameGoalLimit);
 
   const [editingLimit, setEditingLimit] = useState(false);
   const [limitDraft, setLimitDraft] = useState(String(game?.maxPlayers ?? ''));
+  const [editingMatch, setEditingMatch] = useState(false);
+  const [minutesDraft, setMinutesDraft] = useState(String(game?.matchMinutes ?? ''));
+  const [goalLimitDraft, setGoalLimitDraft] = useState(String(game?.matchGoalLimit ?? ''));
 
   if (!game) {
     return (
@@ -69,6 +74,14 @@ export default function GameDetailScreen() {
     const n = Number(limitDraft);
     if (n > 0) updateGameMaxPlayers(game!.id, n);
     setEditingLimit(false);
+  }
+
+  function saveMatchConfig() {
+    const minutes = Number(minutesDraft);
+    if (minutes > 0) setGameMatchMinutes(game!.id, minutes);
+    const goalN = Number(goalLimitDraft);
+    setGameGoalLimit(game!.id, goalLimitDraft.trim() && goalN > 0 ? goalN : null);
+    setEditingMatch(false);
   }
 
   return (
@@ -169,6 +182,31 @@ export default function GameDetailScreen() {
               { value: 'rating', label: 'Por nota' },
             ]}
           />
+          {editingMatch ? (
+            <View style={styles.matchConfigRow}>
+              <TextField label="Minutos" value={minutesDraft} onChangeText={setMinutesDraft} keyboardType="number-pad" style={{ width: 70 }} />
+              <TextField
+                label="Ou gols (opcional)"
+                value={goalLimitDraft}
+                onChangeText={setGoalLimitDraft}
+                keyboardType="number-pad"
+                style={{ width: 90 }}
+              />
+              <Button label="Salvar" small onPress={saveMatchConfig} />
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => {
+                setMinutesDraft(String(game.matchMinutes));
+                setGoalLimitDraft(game.matchGoalLimit ? String(game.matchGoalLimit) : '');
+                setEditingMatch(true);
+              }}
+            >
+              <Text style={styles.link}>
+                Duração da rodada: {game.matchMinutes} min{game.matchGoalLimit ? ` ou ${game.matchGoalLimit} gols` : ''} (alterar)
+              </Text>
+            </Pressable>
+          )}
           <Button
             label={teamsExist ? 'Refazer sorteio' : 'Sortear times'}
             onPress={() => router.push(`/jogo/${game.id}/sorteio`)}
@@ -336,6 +374,11 @@ const styles = StyleSheet.create({
   limitRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
+  },
+  matchConfigRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     gap: spacing.sm,
   },
   link: {

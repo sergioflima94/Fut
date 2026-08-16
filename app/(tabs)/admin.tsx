@@ -172,6 +172,7 @@ function SchedulesSection() {
   const [maxPlayers, setMaxPlayers] = useState(String(pelada.defaultMaxPlayers));
   const [drawMethod, setDrawMethod] = useState<DrawMethod>('rating');
   const [fieldCost, setFieldCost] = useState('');
+  const [goalLimit, setGoalLimit] = useState('');
 
   function handleAdd() {
     if (!fieldId) return;
@@ -186,6 +187,7 @@ function SchedulesSection() {
       matchMinutes: pelada.defaultMatchMinutes,
       drawMethod,
       defaultFieldCost: fieldCost.trim() ? Number(fieldCost.replace(',', '.')) : null,
+      matchGoalLimit: goalLimit.trim() ? Number(goalLimit) : null,
     });
     setOpen(false);
   }
@@ -209,7 +211,8 @@ function SchedulesSection() {
                 {recurrenceLabel(s.recurrence)} {s.recurrence !== 'single' && `· ${WEEKDAY_LABELS[s.dayOfWeek ?? 0]}`} · {s.time}
               </Text>
               <Text style={styles.rowSub}>
-                {field?.name} · até {s.maxPlayers} vagas · {drawMethodLabel(s.drawMethod)}
+                {field?.name} · até {s.maxPlayers} vagas · {drawMethodLabel(s.drawMethod)} · {s.matchMinutes} min
+                {s.matchGoalLimit ? ` ou ${s.matchGoalLimit} gols` : ''}
                 {s.defaultFieldCost ? ` · ${formatBRL(s.defaultFieldCost)}` : ''}
               </Text>
               <Text style={styles.rowSub}>Próximo: {formatGameDateShort(next.toISOString())}</Text>
@@ -258,6 +261,13 @@ function SchedulesSection() {
             onChangeText={setFieldCost}
             placeholder="Ex: 240"
             keyboardType="decimal-pad"
+          />
+          <TextField
+            label="Limite de gols por rodada (opcional)"
+            value={goalLimit}
+            onChangeText={setGoalLimit}
+            placeholder="Ex: 2 — vale o que vier primeiro, gols ou tempo"
+            keyboardType="number-pad"
           />
           <SegmentedControl
             label="Método de sorteio padrão"

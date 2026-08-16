@@ -13,6 +13,7 @@ import { Screen } from '@/components/ui/Screen';
 import { CARD_STYLES } from '@/constants/cardStyles';
 import { colors, radius, spacing } from '@/constants/theme';
 import { formatGameDateShort } from '@/lib/format';
+import { computePlayerGoalStats } from '@/lib/goals';
 import { pickProfilePhoto } from '@/lib/photo';
 import { punishmentLabel } from '@/lib/punishment';
 import { computePlayerOverall, getPendingRatingGames } from '@/lib/ratings';
@@ -25,6 +26,9 @@ export default function PerfilScreen() {
   const ratings = useAppStore((s) => s.ratings);
   const games = useAppStore((s) => s.games);
   const attendances = useAppStore((s) => s.attendances);
+  const teamPlayers = useAppStore((s) => s.teamPlayers);
+  const matchTurns = useAppStore((s) => s.matchTurns);
+  const goals = useAppStore((s) => s.goals);
   const punishments = useAppStore(useShallow((s) => s.punishments.filter((p) => p.playerId === currentPlayerId)));
   const setPlayerPhoto = useAppStore((s) => s.setPlayerPhoto);
   const setPlayerCardStyle = useAppStore((s) => s.setPlayerCardStyle);
@@ -37,6 +41,7 @@ export default function PerfilScreen() {
   const [showLockNotice, setShowLockNotice] = useState(false);
 
   const overall = computePlayerOverall(currentPlayerId, ratings);
+  const goalStats = computePlayerGoalStats(currentPlayerId, teamPlayers, matchTurns, goals);
   const pendingGames = getPendingRatingGames(games, attendances, ratings, currentPlayerId);
 
   async function handleChangePhoto() {
@@ -77,6 +82,7 @@ export default function PerfilScreen() {
           cardBackgroundUrl={player.cardBackgroundUrl}
           position={player.preferredPosition}
           overall={overall}
+          goalStats={goalStats}
           width={190}
         />
         <View style={styles.changePhotoRow}>

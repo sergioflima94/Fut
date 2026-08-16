@@ -68,6 +68,7 @@ create table schedules (
   match_minutes int not null default 10,
   draw_method text not null default 'rating' check (draw_method in ('arrival', 'random', 'rating')),
   default_field_cost numeric(10, 2),
+  match_goal_limit int,
   active boolean not null default true,
   created_by uuid not null references players (id)
 );
@@ -84,6 +85,7 @@ create table games (
   draw_method text not null default 'rating' check (draw_method in ('arrival', 'random', 'rating')),
   status text not null default 'open' check (status in ('open', 'full', 'teams_drawn', 'in_progress', 'finished', 'cancelled')),
   field_cost numeric(10, 2),
+  match_goal_limit int,
   created_by uuid not null references players (id),
   created_at timestamptz not null default now()
 );
@@ -124,6 +126,16 @@ create table match_turns (
   ended_at timestamptz,
   duration_seconds int not null default 0,
   winner_team_id uuid references teams (id)
+);
+
+-- gol marcado durante uma rodada (match_turn): usado pro placar ao vivo e pro saldo de gols na carta
+create table goals (
+  id uuid primary key default gen_random_uuid(),
+  game_id uuid not null references games (id) on delete cascade,
+  match_turn_id uuid not null references match_turns (id) on delete cascade,
+  team_id uuid not null references teams (id),
+  scorer_player_id uuid references players (id),
+  scored_at timestamptz not null default now()
 );
 
 create table ratings (
@@ -190,6 +202,7 @@ alter table attendances enable row level security;
 alter table teams enable row level security;
 alter table team_players enable row level security;
 alter table match_turns enable row level security;
+alter table goals enable row level security;
 alter table ratings enable row level security;
 alter table punishments enable row level security;
 alter table payments enable row level security;
@@ -266,6 +279,13 @@ create policy "match_turns_select_members" on match_turns for select using (
   exists (select 1 from games g where g.id = game_id and is_member_of_pelada(g.pelada_id))
 );
 create policy "match_turns_write_admins" on match_turns for all using (
+  exists (select 1 from games g where g.id = game_id and is_admin_of_pelada(g.pelada_id))
+);
+
+create policy "goals_select_members" on goals for select using (
+  exists (select 1 from games g where g.id = game_id and is_member_of_pelada(g.pelada_id))
+);
+create policy "goals_write_admins" on goals for all using (
   exists (select 1 from games g where g.id = game_id and is_admin_of_pelada(g.pelada_id))
 );
 

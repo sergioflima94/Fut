@@ -2,6 +2,8 @@ import type {
   Attendance,
   Field,
   Game,
+  Goal,
+  MatchTurn,
   Payment,
   Pelada,
   PeladaMembership,
@@ -82,6 +84,7 @@ export const MOCK_SCHEDULES: Schedule[] = [
     matchMinutes: 10,
     drawMethod: 'rating',
     defaultFieldCost: 240,
+    matchGoalLimit: 2,
     active: true,
     createdBy: 'p1',
   },
@@ -102,6 +105,7 @@ export const MOCK_GAMES: Game[] = [
     drawMethod: 'rating',
     status: 'open',
     fieldCost: 240,
+    matchGoalLimit: 2,
     createdBy: 'p1',
     createdAt: iso(now),
   },
@@ -139,6 +143,8 @@ export const MOCK_PAYMENTS: Payment[] = confirmedIds.map((playerId, idx) => {
 
 export const MOCK_TEAMS: Team[] = [];
 export const MOCK_TEAM_PLAYERS: TeamPlayer[] = [];
+export const MOCK_MATCH_TURNS: MatchTurn[] = [];
+export const MOCK_GOALS: Goal[] = [];
 
 export const MOCK_RATINGS: Rating[] = [
   { id: 'r1', gameId: 'g0', raterPlayerId: 'p2', ratedPlayerId: 'p1', attack: 4, defense: 3, pace: 5, overall: 4, createdAt: iso(now) },

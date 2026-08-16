@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { getCardStyle } from '@/constants/cardStyles';
 import { colors, radius, spacing } from '@/constants/theme';
+import type { PlayerGoalStats } from '@/lib/goals';
 import { overallTier } from '@/lib/ratings';
 import type { PlayerOverall } from '@/types';
 
@@ -16,6 +17,7 @@ interface PlayerCardProps {
   cardBackgroundUrl?: string | null;
   position: 'goalkeeper' | 'line';
   overall: PlayerOverall;
+  goalStats?: PlayerGoalStats;
   width?: number;
 }
 
@@ -27,6 +29,7 @@ export function PlayerCard({
   cardBackgroundUrl,
   position,
   overall,
+  goalStats,
   width = 160,
 }: PlayerCardProps) {
   const tier = overallTier(overall.overall);
@@ -108,6 +111,12 @@ export function PlayerCard({
       <Text style={styles.ratingsCount}>
         {overall.ratingsCount === 0 ? 'sem avaliações' : `${overall.ratingsCount} avaliações`}
       </Text>
+      {goalStats && (
+        <Text style={styles.goalStats}>
+          ⚽ {goalStats.scored} {goalStats.scored === 1 ? 'gol' : 'gols'} · saldo{' '}
+          {goalStats.balance > 0 ? `+${goalStats.balance}` : goalStats.balance}
+        </Text>
+      )}
     </View>
   );
 }
@@ -208,5 +217,12 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.6)',
     fontSize: 10,
     marginTop: spacing.xs,
+  },
+  goalStats: {
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 3,
   },
 });

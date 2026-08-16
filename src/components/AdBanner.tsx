@@ -23,7 +23,7 @@ export function AdBanner() {
       <View style={styles.labelRow}>
         <Text style={styles.label}>Anúncio</Text>
         <Pressable onPress={() => router.push('/(tabs)/perfil')}>
-          <Text style={styles.removeAds}>Remover com o Premium</Text>
+          <Text style={styles.removeAds}>Premium ou pague um jogo p/ remover</Text>
         </Pressable>
       </View>
       <View style={styles.adBody}>

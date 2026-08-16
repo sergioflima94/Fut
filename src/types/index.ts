@@ -94,6 +94,8 @@ export interface Schedule {
   drawMethod: DrawMethod;
   /** Custo padrão da quadra, usado para calcular o rateio ("vaquinha") de cada jogo gerado. null = sem rateio. */
   defaultFieldCost: number | null;
+  /** Limite de gols de cada rodada: quem chegar primeiro vence, mesmo antes do tempo acabar. null = só por tempo. */
+  matchGoalLimit: number | null;
   active: boolean;
   createdBy: UUID;
 }
@@ -121,6 +123,8 @@ export interface Game {
   status: GameStatus;
   /** Custo total da quadra nesse jogo. null = sem rateio (cada um resolve por fora). */
   fieldCost: number | null;
+  /** Limite de gols de cada rodada: quem chegar primeiro vence, mesmo antes do tempo acabar. null = só por tempo. */
+  matchGoalLimit: number | null;
   createdBy: UUID;
   createdAt: string;
 }
@@ -164,7 +168,19 @@ export interface MatchTurn {
   startedAt: string | null;
   endedAt: string | null;
   durationSeconds: number;
+  /** null enquanto a rodada está rolando; também null (com endedAt preenchido) em caso de empate. */
   winnerTeamId: UUID | null;
+}
+
+/** Um gol marcado durante uma rodada (MatchTurn), usado pro placar ao vivo e pro saldo de gols na carta. */
+export interface Goal {
+  id: UUID;
+  gameId: UUID;
+  matchTurnId: UUID;
+  teamId: UUID;
+  /** Quem fez o gol. null = gol contra / autor não identificado. */
+  scorerPlayerId: UUID | null;
+  scoredAt: string;
 }
 
 export interface Rating {

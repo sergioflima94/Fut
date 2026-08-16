@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, Vibration, View } from 'react-native';
+import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
 import { Avatar } from '@/components/ui/Avatar';
@@ -32,12 +32,30 @@ export default function CronometroScreen() {
   const players = useAppStore((s) => s.players);
   const queue = useAppStore((s) => (id ? s.matchQueue[id] : undefined));
   const setMatchQueue = useAppStore((s) => s.setMatchQueue);
+  const matchTurns = useAppStore(useShallow((s) => s.matchTurns.filter((t) => t.gameId === id)));
+  const goals = useAppStore(useShallow((s) => s.goals.filter((g) => g.gameId === id)));
+  const startMatchTurn = useAppStore((s) => s.startMatchTurn);
+  const endMatchTurn = useAppStore((s) => s.endMatchTurn);
+  const registerGoal = useAppStore((s) => s.registerGoal);
+  const undoLastGoal = useAppStore((s) => s.undoLastGoal);
   const isAdmin = useAppStore((s) => (game ? s.isAdmin(currentPlayerId, game.peladaId) : false));
 
   const matchSeconds = (game?.matchMinutes ?? 10) * 60;
+  const matchGoalLimit = game?.matchGoalLimit ?? null;
   const [remaining, setRemaining] = useState(matchSeconds);
   const [running, setRunning] = useState(false);
+  const [pickingGoalTeam, setPickingGoalTeam] = useState<'A' | 'B' | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const currentTurn = matchTurns.find((t) => !t.endedAt);
+
+  useEffect(() => {
+    if (!id || !queue || queue.length < 2) return;
+    if (!matchTurns.some((t) => !t.endedAt)) {
+      startMatchTurn(id, queue[0], queue[1]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, queue?.[0], queue?.[1], matchTurns.length]);
 
   useEffect(() => {
     if (running) {
@@ -56,6 +74,17 @@ export default function CronometroScreen() {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [running]);
+
+  // tempo esgotou: decide o resultado automaticamente pelo placar (empate se igual)
+  useEffect(() => {
+    if (remaining !== 0 || !currentTurn) return;
+    const scoreA = goals.filter((g) => g.matchTurnId === currentTurn.id && g.teamId === currentTurn.teamAId).length;
+    const scoreB = goals.filter((g) => g.matchTurnId === currentTurn.id && g.teamId === currentTurn.teamBId).length;
+    if (scoreA > scoreB) handleResult('teamA');
+    else if (scoreB > scoreA) handleResult('teamB');
+    else handleResult('draw');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remaining]);
 
   if (!game) {
     return (
@@ -81,13 +110,33 @@ export default function CronometroScreen() {
   const [teamAId, teamBId, ...waitingIds] = queue;
   const teamA = teamOf(teamAId);
   const teamB = teamOf(teamBId);
+  const scoreOf = (teamId: string) => (currentTurn ? goals.filter((g) => g.matchTurnId === currentTurn.id && g.teamId === teamId).length : 0);
+  const scoreA = scoreOf(teamAId);
+  const scoreB = scoreOf(teamBId);
+  const turnGoals = currentTurn ? goals.filter((g) => g.matchTurnId === currentTurn.id) : [];
 
   function handleResult(result: MatchResult) {
     if (!id || !queue) return;
+    if (currentTurn) {
+      const winnerTeamId = result === 'teamA' ? currentTurn.teamAId : result === 'teamB' ? currentTurn.teamBId : null;
+      endMatchTurn(currentTurn.id, winnerTeamId);
+    }
     const nextQueue = advanceQueue(queue, result);
     setMatchQueue(id, nextQueue);
+    if (nextQueue.length >= 2) startMatchTurn(id, nextQueue[0], nextQueue[1]);
     setRemaining(matchSeconds);
     setRunning(false);
+    setPickingGoalTeam(null);
+  }
+
+  function handleGoal(teamId: string, scorerPlayerId: string | null) {
+    if (!id || !currentTurn) return;
+    registerGoal(id, currentTurn.id, teamId, scorerPlayerId);
+    setPickingGoalTeam(null);
+    const newScore = scoreOf(teamId) + 1;
+    if (matchGoalLimit && newScore >= matchGoalLimit) {
+      handleResult(teamId === teamAId ? 'teamA' : 'teamB');
+    }
   }
 
   const progress = 1 - remaining / matchSeconds;
@@ -95,7 +144,9 @@ export default function CronometroScreen() {
   return (
     <Screen>
       <Card style={styles.timerCard}>
-        <Text style={styles.timerLabel}>Tempo da rodada</Text>
+        <Text style={styles.timerLabel}>
+          Tempo da rodada{game.matchGoalLimit ? ` · até ${game.matchGoalLimit} gols` : ''}
+        </Text>
         <Text style={styles.timer}>{formatTime(remaining)}</Text>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${Math.min(100, progress * 100)}%` }]} />
@@ -121,6 +172,76 @@ export default function CronometroScreen() {
         )}
       </Card>
 
+      <Card style={styles.scoreboardCard}>
+        <View style={styles.scoreboardRow}>
+          <Text style={styles.scoreboardTeam} numberOfLines={1}>
+            {teamA?.name}
+          </Text>
+          <View style={styles.scoreboardScoreWrap}>
+            <Text style={styles.scoreboardScore}>
+              {scoreA} - {scoreB}
+            </Text>
+          </View>
+          <Text style={[styles.scoreboardTeam, { textAlign: 'right' }]} numberOfLines={1}>
+            {teamB?.name}
+          </Text>
+        </View>
+
+        {isAdmin && (
+          <View style={styles.goalButtonsRow}>
+            <Button label={`⚽ Gol ${teamA?.name ?? 'Time A'}`} small variant="secondary" onPress={() => setPickingGoalTeam('A')} />
+            <Button label={`⚽ Gol ${teamB?.name ?? 'Time B'}`} small variant="secondary" onPress={() => setPickingGoalTeam('B')} />
+          </View>
+        )}
+
+        {isAdmin && pickingGoalTeam && (
+          <View style={styles.scorerPicker}>
+            <Text style={styles.scorerPickerTitle}>Quem fez o gol?</Text>
+            <View style={styles.scorerList}>
+              {rosterOf(pickingGoalTeam === 'A' ? teamAId : teamBId).map((r) => (
+                <Pressable
+                  key={r.playerId}
+                  style={styles.scorerOption}
+                  onPress={() => handleGoal(pickingGoalTeam === 'A' ? teamAId : teamBId, r.playerId)}
+                >
+                  <Avatar name={playerName(r.playerId)} photoUrl={playerPhoto(r.playerId)} size={22} />
+                  <Text style={styles.scorerOptionText}>{playerName(r.playerId)}</Text>
+                </Pressable>
+              ))}
+              <Pressable
+                style={styles.scorerOption}
+                onPress={() => handleGoal(pickingGoalTeam === 'A' ? teamAId : teamBId, null)}
+              >
+                <View style={styles.scorerUnknownIcon}>
+                  <Ionicons name="help" size={14} color={colors.textMuted} />
+                </View>
+                <Text style={styles.scorerOptionText}>Gol contra / sem autor</Text>
+              </Pressable>
+            </View>
+            <Pressable onPress={() => setPickingGoalTeam(null)}>
+              <Text style={styles.cancelPicker}>Cancelar</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {turnGoals.length > 0 && (
+          <View style={styles.goalsLog}>
+            {turnGoals.map((g) => (
+              <View key={g.id} style={styles.goalsLogRow}>
+                <Text style={styles.goalsLogText}>
+                  ⚽ {g.scorerPlayerId ? playerName(g.scorerPlayerId) : 'Gol contra'} ({g.teamId === teamAId ? teamA?.name : teamB?.name})
+                </Text>
+              </View>
+            ))}
+            {isAdmin && (
+              <Pressable onPress={() => currentTurn && undoLastGoal(currentTurn.id)}>
+                <Text style={styles.undoLink}>Desfazer último gol</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      </Card>
+
       <View style={styles.matchup}>
         <TeamBox
           name={teamA?.name}
@@ -141,7 +262,7 @@ export default function CronometroScreen() {
 
       {isAdmin && (
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Resultado da rodada</Text>
+          <Text style={styles.sectionTitle}>Encerrar rodada manualmente</Text>
           <View style={styles.resultRow}>
             <Button label={`${teamA?.name ?? 'Time A'} venceu`} small onPress={() => handleResult('teamA')} />
             <Button label={`${teamB?.name ?? 'Time B'} venceu`} small onPress={() => handleResult('teamB')} />
@@ -235,6 +356,91 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.sm,
+  },
+  scoreboardCard: {
+    marginTop: spacing.md,
+    gap: spacing.sm,
+  },
+  scoreboardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  scoreboardTeam: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  scoreboardScoreWrap: {
+    paddingHorizontal: spacing.sm,
+  },
+  scoreboardScore: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+  },
+  goalButtonsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  scorerPicker: {
+    backgroundColor: colors.bgElevated,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  scorerPickerTitle: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  scorerList: {
+    gap: 2,
+  },
+  scorerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 6,
+  },
+  scorerOptionText: {
+    color: colors.text,
+    fontSize: 14,
+  },
+  scorerUnknownIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.full,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelPicker: {
+    color: colors.textFaint,
+    fontSize: 12,
+    marginTop: spacing.xs,
+  },
+  goalsLog: {
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorder,
+    paddingTop: spacing.sm,
+    gap: 4,
+  },
+  goalsLogRow: {
+    flexDirection: 'row',
+  },
+  goalsLogText: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  undoLink: {
+    color: colors.danger,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
   },
   matchup: {
     flexDirection: 'row',

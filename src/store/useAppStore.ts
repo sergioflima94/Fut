@@ -7,6 +7,8 @@ import {
   MOCK_ATTENDANCES,
   MOCK_FIELDS,
   MOCK_GAMES,
+  MOCK_GOALS,
+  MOCK_MATCH_TURNS,
   MOCK_MEMBERSHIPS,
   MOCK_PAYMENTS,
   MOCK_PELADA,
@@ -25,6 +27,8 @@ import type {
   Field,
   Game,
   GameStatus,
+  Goal,
+  MatchTurn,
   Payment,
   PaymentMethod,
   PaymentStatus,
@@ -57,6 +61,8 @@ interface AppState {
   ratings: Rating[];
   punishments: Punishment[];
   payments: Payment[];
+  matchTurns: MatchTurn[];
+  goals: Goal[];
   matchQueue: Record<string, string[]>; // gameId -> ordered team ids
 
   // chamada / presença
@@ -66,6 +72,13 @@ interface AppState {
   setGameTeams: (gameId: string, teams: Team[], teamPlayers: TeamPlayer[]) => void;
   setGameStatus: (gameId: string, status: Game['status']) => void;
   setMatchQueue: (gameId: string, queue: string[]) => void;
+
+  // placar ao vivo / gols
+  startMatchTurn: (gameId: string, teamAId: string, teamBId: string) => MatchTurn;
+  endMatchTurn: (matchTurnId: string, winnerTeamId: string | null) => void;
+  registerGoal: (gameId: string, matchTurnId: string, teamId: string, scorerPlayerId: string | null) => void;
+  undoLastGoal: (matchTurnId: string) => void;
+  setGameGoalLimit: (gameId: string, matchGoalLimit: number | null) => void;
 
   // avaliações
   submitRating: (rating: Omit<Rating, 'id' | 'createdAt' | 'overall'>) => void;
@@ -86,6 +99,7 @@ interface AppState {
     matchMinutes: number;
     drawMethod: DrawMethod;
     defaultFieldCost: number | null;
+    matchGoalLimit: number | null;
   }) => Schedule;
   addGameFromSchedule: (scheduleId: string, scheduledAt: string) => Game;
   updateGameMaxPlayers: (gameId: string, maxPlayers: number) => void;
@@ -110,6 +124,9 @@ interface AppState {
   // rateio ("vaquinha") do custo da quadra
   setGameFieldCost: (gameId: string, fieldCost: number | null) => void;
   setPaymentStatus: (gameId: string, playerId: string, status: PaymentStatus, method?: PaymentMethod) => void;
+
+  // duração/limite de gols da partida
+  setGameMatchMinutes: (gameId: string, matchMinutes: number) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -128,6 +145,8 @@ export const useAppStore = create<AppState>()(
       ratings: MOCK_RATINGS,
       punishments: MOCK_PUNISHMENTS,
       payments: MOCK_PAYMENTS,
+      matchTurns: MOCK_MATCH_TURNS,
+      goals: MOCK_GOALS,
       matchQueue: {},
 
       setAttendance: (gameId, playerId, status) => {
@@ -196,6 +215,50 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ matchQueue: { ...state.matchQueue, [gameId]: queue } }));
       },
 
+      startMatchTurn: (gameId, teamAId, teamBId) => {
+        const turn: MatchTurn = {
+          id: uid(),
+          gameId,
+          teamAId,
+          teamBId,
+          startedAt: nowIso(),
+          endedAt: null,
+          durationSeconds: 0,
+          winnerTeamId: null,
+        };
+        set((state) => ({ matchTurns: [...state.matchTurns, turn] }));
+        return turn;
+      },
+
+      endMatchTurn: (matchTurnId, winnerTeamId) => {
+        set((state) => ({
+          matchTurns: state.matchTurns.map((t) => {
+            if (t.id !== matchTurnId) return t;
+            const durationSeconds = t.startedAt ? Math.round((Date.now() - new Date(t.startedAt).getTime()) / 1000) : 0;
+            return { ...t, endedAt: nowIso(), durationSeconds, winnerTeamId };
+          }),
+        }));
+      },
+
+      registerGoal: (gameId, matchTurnId, teamId, scorerPlayerId) => {
+        set((state) => ({
+          goals: [...state.goals, { id: uid(), gameId, matchTurnId, teamId, scorerPlayerId, scoredAt: nowIso() } satisfies Goal],
+        }));
+      },
+
+      undoLastGoal: (matchTurnId) => {
+        set((state) => {
+          const turnGoals = state.goals.filter((g) => g.matchTurnId === matchTurnId);
+          if (turnGoals.length === 0) return {};
+          const last = turnGoals[turnGoals.length - 1];
+          return { goals: state.goals.filter((g) => g.id !== last.id) };
+        });
+      },
+
+      setGameGoalLimit: (gameId, matchGoalLimit) => {
+        set((state) => ({ games: state.games.map((g) => (g.id === gameId ? { ...g, matchGoalLimit } : g)) }));
+      },
+
       submitRating: (rating) => {
         const overall = Math.round(((rating.attack + rating.defense + rating.pace) / 3) * 100) / 100;
         set((state) => ({
@@ -240,6 +303,7 @@ export const useAppStore = create<AppState>()(
           matchMinutes: input.matchMinutes,
           drawMethod: input.drawMethod,
           defaultFieldCost: input.defaultFieldCost,
+          matchGoalLimit: input.matchGoalLimit,
           active: true,
           createdBy: get().currentPlayerId,
         };
@@ -262,6 +326,7 @@ export const useAppStore = create<AppState>()(
           drawMethod: schedule.drawMethod,
           status: 'open',
           fieldCost: schedule.defaultFieldCost,
+          matchGoalLimit: schedule.matchGoalLimit,
           createdBy: get().currentPlayerId,
           createdAt: nowIso(),
         };
@@ -355,6 +420,10 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ games: state.games.map((g) => (g.id === gameId ? { ...g, fieldCost } : g)) }));
       },
 
+      setGameMatchMinutes: (gameId, matchMinutes) => {
+        set((state) => ({ games: state.games.map((g) => (g.id === gameId ? { ...g, matchMinutes } : g)) }));
+      },
+
       setPaymentStatus: (gameId, playerId, status, method) => {
         set((state) => {
           const existing = state.payments.find((p) => p.gameId === gameId && p.playerId === playerId);
@@ -391,6 +460,8 @@ export const useAppStore = create<AppState>()(
         ratings: state.ratings,
         punishments: state.punishments,
         payments: state.payments,
+        matchTurns: state.matchTurns,
+        goals: state.goals,
         matchQueue: state.matchQueue,
         currentPlayerId: state.currentPlayerId,
       }),
