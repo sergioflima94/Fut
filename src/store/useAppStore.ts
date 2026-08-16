@@ -12,6 +12,7 @@ import {
   MOCK_MEMBERSHIPS,
   MOCK_PAYMENTS,
   MOCK_PELADA,
+  MOCK_PELADAS,
   MOCK_PLAYERS,
   MOCK_PUNISHMENTS,
   MOCK_RATINGS,
@@ -19,6 +20,7 @@ import {
   MOCK_TEAMS,
   MOCK_TEAM_PLAYERS,
 } from '@/lib/mockData';
+import { addPremiumPeriod } from '@/lib/premium';
 import { buildPunishment } from '@/lib/punishment';
 import type {
   Attendance,
@@ -49,6 +51,8 @@ const nowIso = () => new Date().toISOString();
 
 interface AppState {
   currentPlayerId: string;
+  /** Pelada (grupo) que está sendo exibida agora — o jogador pode fazer parte de mais de uma. */
+  currentPeladaId: string;
   players: Player[];
   peladas: Pelada[];
   memberships: PeladaMembership[];
@@ -67,6 +71,8 @@ interface AppState {
 
   // chamada / presença
   setAttendance: (gameId: string, playerId: string, status: AttendanceStatus) => void;
+  /** Admin adiciona um convidado sem conta direto na chamada de um jogo específico; entra confirmado (ou na espera, se lotado). */
+  addGuest: (gameId: string, name: string) => Player;
 
   // sorteio de times
   setGameTeams: (gameId: string, teams: Team[], teamPlayers: TeamPlayer[]) => void;
@@ -116,10 +122,13 @@ interface AppState {
   setPlayerCardStyle: (playerId: string, cardStyleId: string | null) => void;
   setPlayerCardBackground: (playerId: string, cardBackgroundUrl: string | null) => void;
   updatePeladaInfo: (peladaId: string, input: { name: string; description: string | null }) => void;
+  setCurrentPelada: (peladaId: string) => void;
+  /** Entra numa pelada usando o código de convite. Retorna a pelada encontrada, ou null se o código não existir. */
+  joinPeladaByCode: (code: string, playerId: string) => Pelada | null;
 
-  // premium (assinatura individual simulada)
-  upgradeToPremium: (playerId: string) => void;
-  cancelPremium: (playerId: string) => void;
+  // premium: assinatura mensal simulada (em produção, gerenciada pela App Store/Google Play)
+  renewPremium: (playerId: string) => void;
+  cancelPremiumAutoRenew: (playerId: string) => void;
 
   // rateio ("vaquinha") do custo da quadra
   setGameFieldCost: (gameId: string, fieldCost: number | null) => void;
@@ -133,8 +142,9 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       currentPlayerId: CURRENT_PLAYER_ID,
+      currentPeladaId: MOCK_PELADA.id,
       players: MOCK_PLAYERS,
-      peladas: [MOCK_PELADA],
+      peladas: MOCK_PELADAS,
       memberships: MOCK_MEMBERSHIPS,
       fields: MOCK_FIELDS,
       schedules: MOCK_SCHEDULES,
@@ -193,6 +203,28 @@ export const useAppStore = create<AppState>()(
 
           return { attendances, games };
         });
+      },
+
+      addGuest: (gameId, name) => {
+        const guest: Player = {
+          id: uid(),
+          authUserId: null,
+          name: name.trim() || 'Convidado',
+          nickname: null,
+          avatarUrl: null,
+          phone: null,
+          preferredPosition: 'line',
+          cardStyleId: null,
+          cardBackgroundUrl: null,
+          premiumSince: null,
+          premiumUntil: null,
+          premiumAutoRenew: false,
+          isGuest: true,
+          createdAt: nowIso(),
+        };
+        set((state) => ({ players: [...state.players, guest] }));
+        get().setAttendance(gameId, guest.id, 'confirmed');
+        return guest;
       },
 
       setGameTeams: (gameId, teams, teamPlayers) => {
@@ -404,15 +436,43 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
-      upgradeToPremium: (playerId) => {
+      setCurrentPelada: (peladaId) => {
+        set({ currentPeladaId: peladaId });
+      },
+
+      joinPeladaByCode: (code, playerId) => {
+        const normalized = code.trim().toUpperCase();
+        const pelada = get().peladas.find((p) => p.inviteCode.toUpperCase() === normalized);
+        if (!pelada) return null;
+
+        const alreadyMember = get().memberships.some((m) => m.peladaId === pelada.id && m.playerId === playerId);
+        if (!alreadyMember) {
+          set((state) => ({
+            memberships: [
+              ...state.memberships,
+              { peladaId: pelada.id, playerId, role: 'member', active: true, joinedAt: nowIso() } satisfies PeladaMembership,
+            ],
+          }));
+        }
+        set({ currentPeladaId: pelada.id });
+        return pelada;
+      },
+
+      renewPremium: (playerId) => {
         set((state) => ({
-          players: state.players.map((p) => (p.id === playerId ? { ...p, isPremium: true, premiumSince: nowIso() } : p)),
+          players: state.players.map((p) =>
+            p.id === playerId
+              ? { ...p, premiumSince: p.premiumSince ?? nowIso(), premiumUntil: addPremiumPeriod(), premiumAutoRenew: true }
+              : p,
+          ),
         }));
       },
 
-      cancelPremium: (playerId) => {
+      cancelPremiumAutoRenew: (playerId) => {
+        // Assinatura via loja: cancelar só desliga a renovação automática. O benefício
+        // continua valendo até premiumUntil (igual acontece de verdade na App Store/Play).
         set((state) => ({
-          players: state.players.map((p) => (p.id === playerId ? { ...p, isPremium: false, premiumSince: null } : p)),
+          players: state.players.map((p) => (p.id === playerId ? { ...p, premiumAutoRenew: false } : p)),
         }));
       },
 
@@ -464,6 +524,7 @@ export const useAppStore = create<AppState>()(
         goals: state.goals,
         matchQueue: state.matchQueue,
         currentPlayerId: state.currentPlayerId,
+        currentPeladaId: state.currentPeladaId,
       }),
     },
   ),

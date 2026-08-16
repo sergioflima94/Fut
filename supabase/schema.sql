@@ -16,8 +16,11 @@ create table players (
   avatar_url text,
   card_style_id text,
   card_background_url text,
-  is_premium boolean not null default false,
+  -- assinatura Premium mensal, gerenciada pela App Store/Google Play (RevenueCat) — ver src/lib/premium.ts
   premium_since timestamptz,
+  premium_until timestamptz,
+  premium_auto_renew boolean not null default false,
+  is_guest boolean not null default false,
   phone text,
   preferred_position text not null default 'line' check (preferred_position in ('goalkeeper', 'line')),
   created_at timestamptz not null default now()
@@ -33,6 +36,7 @@ create table peladas (
   sport text not null default 'society' check (sport in ('society', 'futsal', 'campo')),
   default_max_players int not null default 16,
   default_match_minutes int not null default 10,
+  invite_code text not null unique,
   created_by uuid not null references players (id),
   created_at timestamptz not null default now()
 );
@@ -229,12 +233,19 @@ create policy "players_select_all" on players for select using (true);
 create policy "players_insert_self" on players for insert with check (auth_user_id = auth.uid());
 create policy "players_update_self" on players for update using (auth_user_id = auth.uid());
 
-create policy "peladas_select_members" on peladas for select using (is_member_of_pelada(id));
+-- select liberado (nome/descrição não são sensíveis) pra permitir localizar a pelada pelo
+-- código de convite antes de virar membro; dados sensíveis (jogos, chamada, pagamentos)
+-- continuam só pra quem já é membro.
+create policy "peladas_select_all" on peladas for select using (true);
 create policy "peladas_insert_authenticated" on peladas for insert with check (auth.uid() is not null);
 create policy "peladas_update_admins" on peladas for update using (is_admin_of_pelada(id));
 
 create policy "memberships_select_members" on pelada_memberships for select using (is_member_of_pelada(pelada_id));
 create policy "memberships_write_admins" on pelada_memberships for all using (is_admin_of_pelada(pelada_id));
+-- entrar numa pelada por código de convite: o próprio jogador pode se auto-adicionar como membro comum
+create policy "memberships_insert_self" on pelada_memberships for insert with check (
+  role = 'member' and exists (select 1 from players p where p.id = player_id and p.auth_user_id = auth.uid())
+);
 
 create policy "fields_select_members" on fields for select using (is_member_of_pelada(pelada_id));
 create policy "fields_write_admins" on fields for all using (is_admin_of_pelada(pelada_id));

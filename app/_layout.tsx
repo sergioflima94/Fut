@@ -14,6 +14,7 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="jogo/[id]" />
+          <Stack.Screen name="entrar-pelada" options={{ presentation: 'modal' }} />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

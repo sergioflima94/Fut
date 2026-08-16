@@ -28,9 +28,18 @@ export interface Player {
   cardStyleId: string | null;
   /** Foto escolhida pelo jogador como fundo da carta. Quando definida, tem prioridade sobre cardStyleId. */
   cardBackgroundUrl: string | null;
-  /** Assinante do plano Premium: sem anúncios e com estilos/fundo de carta exclusivos liberados. */
-  isPremium: boolean;
+  /**
+   * Assinatura Premium (sem anúncios, estilos/fundo de carta exclusivos) — mensal e
+   * gerenciada pela App Store / Google Play. `premiumSince` é a primeira assinatura;
+   * `premiumUntil` é até quando o período pago atual vale. Use isPremiumActive()
+   * (src/lib/premium.ts) para checar se o benefício está valendo agora — se
+   * `premiumUntil` passou (não renovou), o jogador perde o benefício.
+   */
   premiumSince: string | null;
+  premiumUntil: string | null;
+  /** Nem sempre disponível: refletido pelo SDK de compras nativo (RevenueCat/StoreKit), não gerenciado por nós. */
+  premiumAutoRenew: boolean;
+  isGuest: boolean;
   createdAt: string;
 }
 
@@ -53,6 +62,8 @@ export interface Pelada {
   sport: 'society' | 'futsal' | 'campo';
   defaultMaxPlayers: number;
   defaultMatchMinutes: number;
+  /** Código curto pra convidar gente nova pra pelada (link/compartilhamento). */
+  inviteCode: string;
   createdBy: UUID;
   createdAt: string;
 }

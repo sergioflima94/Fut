@@ -2,14 +2,16 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { AdBanner } from '@/components/AdBanner';
 import { GameCard } from '@/components/GameCard';
+import { PeladaSwitcher } from '@/components/PeladaSwitcher';
 import { Screen } from '@/components/ui/Screen';
 import { colors, spacing } from '@/constants/theme';
+import { useCurrentPelada } from '@/hooks/useCurrentPelada';
 import { useIsAdFree } from '@/hooks/useIsAdFree';
 import { useAppStore } from '@/store/useAppStore';
 
 export default function AgendaScreen() {
-  const pelada = useAppStore((s) => s.peladas[0]);
-  const games = useAppStore((s) => s.games);
+  const pelada = useCurrentPelada();
+  const games = useAppStore((s) => s.games.filter((g) => g.peladaId === pelada.id));
   const adFree = useIsAdFree();
 
   const now = Date.now();
@@ -23,7 +25,7 @@ export default function AgendaScreen() {
   return (
     <Screen>
       <View style={styles.peladaHeader}>
-        <Text style={styles.peladaName}>{pelada.name}</Text>
+        <PeladaSwitcher />
         {pelada.description && <Text style={styles.peladaDescription}>{pelada.description}</Text>}
       </View>
       {!adFree && <AdBanner />}
@@ -52,11 +54,6 @@ export default function AgendaScreen() {
 const styles = StyleSheet.create({
   peladaHeader: {
     marginBottom: spacing.lg,
-  },
-  peladaName: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '800',
   },
   peladaDescription: {
     color: colors.textMuted,

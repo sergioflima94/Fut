@@ -39,12 +39,15 @@ export default function GameDetailScreen() {
   const promoteFromWaitlist = useAppStore((s) => s.promoteFromWaitlist);
   const setGameMatchMinutes = useAppStore((s) => s.setGameMatchMinutes);
   const setGameGoalLimit = useAppStore((s) => s.setGameGoalLimit);
+  const addGuest = useAppStore((s) => s.addGuest);
 
   const [editingLimit, setEditingLimit] = useState(false);
   const [limitDraft, setLimitDraft] = useState(String(game?.maxPlayers ?? ''));
   const [editingMatch, setEditingMatch] = useState(false);
   const [minutesDraft, setMinutesDraft] = useState(String(game?.matchMinutes ?? ''));
   const [goalLimitDraft, setGoalLimitDraft] = useState(String(game?.matchGoalLimit ?? ''));
+  const [addingGuest, setAddingGuest] = useState(false);
+  const [guestName, setGuestName] = useState('');
 
   if (!game) {
     return (
@@ -67,6 +70,7 @@ export default function GameDetailScreen() {
 
   const playerName = (playerId: string) => players.find((p) => p.id === playerId)?.name ?? '—';
   const playerPhoto = (playerId: string) => players.find((p) => p.id === playerId)?.avatarUrl ?? null;
+  const playerIsGuest = (playerId: string) => players.find((p) => p.id === playerId)?.isGuest ?? false;
 
   const teamsExist = teams.length > 0;
 
@@ -146,18 +150,49 @@ export default function GameDetailScreen() {
           </View>
         )}
 
-        <PlayerList title="Confirmados" attendances={confirmed} nameOf={playerName} photoOf={playerPhoto} />
+        <PlayerList title="Confirmados" attendances={confirmed} nameOf={playerName} photoOf={playerPhoto} guestOf={playerIsGuest} />
         {waitlist.length > 0 && (
           <PlayerList
             title="Lista de espera"
             attendances={waitlist}
             nameOf={playerName}
             photoOf={playerPhoto}
+            guestOf={playerIsGuest}
             action={isAdmin ? { label: 'Promover 1º da fila', onPress: () => promoteFromWaitlist(game.id) } : undefined}
           />
         )}
         {declined.length > 0 && (
-          <PlayerList title="Não vão" attendances={declined} nameOf={playerName} photoOf={playerPhoto} muted />
+          <PlayerList title="Não vão" attendances={declined} nameOf={playerName} photoOf={playerPhoto} guestOf={playerIsGuest} muted />
+        )}
+
+        {isAdmin && (
+          <View style={styles.guestSection}>
+            {addingGuest ? (
+              <View style={styles.guestForm}>
+                <TextField
+                  label=""
+                  value={guestName}
+                  onChangeText={setGuestName}
+                  placeholder="Nome do convidado"
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  label="Adicionar"
+                  small
+                  onPress={() => {
+                    if (!guestName.trim()) return;
+                    addGuest(game.id, guestName.trim());
+                    setGuestName('');
+                    setAddingGuest(false);
+                  }}
+                />
+              </View>
+            ) : (
+              <Pressable onPress={() => setAddingGuest(true)}>
+                <Text style={styles.link}>+ Adicionar convidado (sem app)</Text>
+              </Pressable>
+            )}
+          </View>
         )}
       </Card>
 
@@ -296,6 +331,7 @@ function PlayerList({
   attendances,
   nameOf,
   photoOf,
+  guestOf,
   muted,
   action,
 }: {
@@ -303,6 +339,7 @@ function PlayerList({
   attendances: Attendance[];
   nameOf: (id: string) => string;
   photoOf: (id: string) => string | null;
+  guestOf?: (id: string) => boolean;
   muted?: boolean;
   action?: { label: string; onPress: () => void };
 }) {
@@ -322,6 +359,7 @@ function PlayerList({
         <View key={a.id} style={styles.playerRow}>
           <Avatar name={nameOf(a.playerId)} photoUrl={photoOf(a.playerId)} size={30} />
           <Text style={[styles.playerName, muted && { color: colors.textFaint }]}>{nameOf(a.playerId)}</Text>
+          {guestOf?.(a.playerId) && <Badge label="Convidado" color={colors.textFaint} textColor={colors.bg} />}
         </View>
       ))}
     </View>
@@ -412,6 +450,17 @@ const styles = StyleSheet.create({
   },
   listSection: {
     marginTop: spacing.sm,
+  },
+  guestSection: {
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorder,
+  },
+  guestForm: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
   },
   listTitle: {
     color: colors.text,

@@ -1,4 +1,4 @@
-import type { Goal, MatchTurn, TeamPlayer } from '@/types';
+import type { Game, Goal, MatchTurn, TeamPlayer } from '@/types';
 
 export interface PlayerGoalStats {
   scored: number;
@@ -42,4 +42,31 @@ export function computeAllGoalStats(
   goals: Goal[],
 ): Record<string, PlayerGoalStats> {
   return Object.fromEntries(playerIds.map((id) => [id, computePlayerGoalStats(id, teamPlayers, turns, goals)]));
+}
+
+export interface GoalStatsByGroup {
+  peladaId: string;
+  peladaName: string;
+  stats: PlayerGoalStats;
+}
+
+/** Gols do jogador separados por pelada (grupo), além do geral (computePlayerGoalStats com tudo junto). */
+export function computePlayerGoalStatsByGroup(
+  playerId: string,
+  teamPlayers: TeamPlayer[],
+  turns: MatchTurn[],
+  goals: Goal[],
+  games: Game[],
+  peladas: { id: string; name: string }[],
+): GoalStatsByGroup[] {
+  return peladas.map((pelada) => {
+    const peladaTurns = turns.filter((t) => games.find((g) => g.id === t.gameId)?.peladaId === pelada.id);
+    const turnIds = new Set(peladaTurns.map((t) => t.id));
+    const peladaGoals = goals.filter((g) => turnIds.has(g.matchTurnId));
+    return {
+      peladaId: pelada.id,
+      peladaName: pelada.name,
+      stats: computePlayerGoalStats(playerId, teamPlayers, peladaTurns, peladaGoals),
+    };
+  });
 }

@@ -1,16 +1,22 @@
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useShallow } from 'zustand/react/shallow';
 
 import { AdBanner } from '@/components/AdBanner';
 import { PlayerCard } from '@/components/PlayerCard';
 import { colors, spacing } from '@/constants/theme';
+import { useCurrentPelada } from '@/hooks/useCurrentPelada';
 import { useIsAdFree } from '@/hooks/useIsAdFree';
 import { computeAllGoalStats } from '@/lib/goals';
 import { computeAllOveralls } from '@/lib/ratings';
 import { useAppStore } from '@/store/useAppStore';
 
 export default function JogadoresScreen() {
+  const pelada = useCurrentPelada();
   const players = useAppStore((s) => s.players);
+  const memberIds = useAppStore(
+    useShallow((s) => new Set(s.memberships.filter((m) => m.peladaId === pelada.id && m.active).map((m) => m.playerId))),
+  );
   const ratings = useAppStore((s) => s.ratings);
   const teamPlayers = useAppStore((s) => s.teamPlayers);
   const matchTurns = useAppStore((s) => s.matchTurns);
@@ -27,11 +33,14 @@ export default function JogadoresScreen() {
     goals,
   );
 
-  const sorted = [...players].sort((a, b) => overalls[b.id].overall - overalls[a.id].overall);
+  const sorted = players
+    .filter((p) => !p.isGuest && memberIds.has(p.id))
+    .sort((a, b) => overalls[b.id].overall - overalls[a.id].overall);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <Text style={styles.title}>Elenco</Text>
+      <Text style={styles.subtitle}>{pelada.name}</Text>
       <FlatList
         data={sorted}
         keyExtractor={(item) => item.id}
@@ -70,6 +79,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
+  },
+  subtitle: {
+    color: colors.textMuted,
+    fontSize: 13,
+    paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
   },
   list: {

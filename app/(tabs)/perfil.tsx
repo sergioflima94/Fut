@@ -12,9 +12,11 @@ import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
 import { CARD_STYLES } from '@/constants/cardStyles';
 import { colors, radius, spacing } from '@/constants/theme';
+import { useMyPeladas } from '@/hooks/useCurrentPelada';
 import { formatGameDateShort } from '@/lib/format';
-import { computePlayerGoalStats } from '@/lib/goals';
+import { computePlayerGoalStats, computePlayerGoalStatsByGroup } from '@/lib/goals';
 import { pickProfilePhoto } from '@/lib/photo';
+import { isPremiumActive } from '@/lib/premium';
 import { punishmentLabel } from '@/lib/punishment';
 import { computePlayerOverall, getPendingRatingGames } from '@/lib/ratings';
 import { useAppStore } from '@/store/useAppStore';
@@ -29,12 +31,13 @@ export default function PerfilScreen() {
   const teamPlayers = useAppStore((s) => s.teamPlayers);
   const matchTurns = useAppStore((s) => s.matchTurns);
   const goals = useAppStore((s) => s.goals);
+  const myPeladas = useMyPeladas();
   const punishments = useAppStore(useShallow((s) => s.punishments.filter((p) => p.playerId === currentPlayerId)));
   const setPlayerPhoto = useAppStore((s) => s.setPlayerPhoto);
   const setPlayerCardStyle = useAppStore((s) => s.setPlayerCardStyle);
   const setPlayerCardBackground = useAppStore((s) => s.setPlayerCardBackground);
-  const upgradeToPremium = useAppStore((s) => s.upgradeToPremium);
-  const cancelPremium = useAppStore((s) => s.cancelPremium);
+  const renewPremium = useAppStore((s) => s.renewPremium);
+  const cancelPremiumAutoRenew = useAppStore((s) => s.cancelPremiumAutoRenew);
   const logout = useAuthStore((s) => s.logout);
   const [pickingPhoto, setPickingPhoto] = useState(false);
   const [pickingBg, setPickingBg] = useState(false);
@@ -42,7 +45,9 @@ export default function PerfilScreen() {
 
   const overall = computePlayerOverall(currentPlayerId, ratings);
   const goalStats = computePlayerGoalStats(currentPlayerId, teamPlayers, matchTurns, goals);
+  const goalStatsByGroup = computePlayerGoalStatsByGroup(currentPlayerId, teamPlayers, matchTurns, goals, games, myPeladas);
   const pendingGames = getPendingRatingGames(games, attendances, ratings, currentPlayerId);
+  const isPremium = isPremiumActive(player);
 
   async function handleChangePhoto() {
     setPickingPhoto(true);
@@ -52,7 +57,7 @@ export default function PerfilScreen() {
   }
 
   async function handleChangeBackground() {
-    if (!player.isPremium) {
+    if (!isPremium) {
       setShowLockNotice(true);
       return;
     }
@@ -63,7 +68,7 @@ export default function PerfilScreen() {
   }
 
   function handleSelectStyle(styleId: string, premium: boolean) {
-    if (premium && !player.isPremium) {
+    if (premium && !isPremium) {
       setShowLockNotice(true);
       return;
     }
@@ -99,10 +104,11 @@ export default function PerfilScreen() {
       {player.nickname && <Text style={styles.nickname}>"{player.nickname}"</Text>}
 
       <PremiumSection
-        isPremium={player.isPremium}
         premiumSince={player.premiumSince}
-        onSubscribe={() => upgradeToPremium(currentPlayerId)}
-        onCancel={() => cancelPremium(currentPlayerId)}
+        premiumUntil={player.premiumUntil}
+        autoRenew={player.premiumAutoRenew}
+        onSubscribe={() => renewPremium(currentPlayerId)}
+        onCancelAutoRenew={() => cancelPremiumAutoRenew(currentPlayerId)}
       />
 
       <Card style={styles.section}>
@@ -111,7 +117,7 @@ export default function PerfilScreen() {
           {CARD_STYLES.map((style) => {
             const selected = !player.cardBackgroundUrl && (player.cardStyleId ?? 'default') === style.id;
             const swatchColor = style.colors ? style.colors[0] : colors.textFaint;
-            const locked = style.premium && !player.isPremium;
+            const locked = style.premium && !isPremium;
             return (
               <Pressable
                 key={style.id}
@@ -129,7 +135,7 @@ export default function PerfilScreen() {
           <Text style={styles.bgLabel}>
             {player.cardBackgroundUrl
               ? 'Fundo com foto personalizada'
-              : player.isPremium
+              : isPremium
                 ? 'Ou use uma foto como fundo da carta'
                 : 'Fundo com foto é exclusivo do Premium'}
           </Text>
@@ -138,7 +144,7 @@ export default function PerfilScreen() {
               {pickingBg ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Ionicons name={player.isPremium ? 'image' : 'lock-closed'} size={14} color={colors.primary} />
+                <Ionicons name={isPremium ? 'image' : 'lock-closed'} size={14} color={colors.primary} />
               )}
               <Text style={styles.bgActionText}>{player.cardBackgroundUrl ? 'Trocar' : 'Escolher imagem'}</Text>
             </Pressable>
@@ -149,11 +155,31 @@ export default function PerfilScreen() {
               </Pressable>
             )}
           </View>
-          {showLockNotice && !player.isPremium && (
+          {showLockNotice && !isPremium && (
             <Text style={styles.lockNotice}>🔒 Esse recurso é exclusivo do Premium — assine para desbloquear.</Text>
           )}
         </View>
       </Card>
+
+      {myPeladas.length > 1 && (
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>Gols por grupo</Text>
+          <View style={styles.goalGroupRow}>
+            <Text style={styles.goalGroupName}>Geral (todos os grupos)</Text>
+            <Text style={styles.goalGroupStats}>
+              ⚽ {goalStats.scored} · saldo {goalStats.balance > 0 ? `+${goalStats.balance}` : goalStats.balance}
+            </Text>
+          </View>
+          {goalStatsByGroup.map((g) => (
+            <View key={g.peladaId} style={styles.goalGroupRow}>
+              <Text style={styles.goalGroupName}>{g.peladaName}</Text>
+              <Text style={styles.goalGroupStats}>
+                ⚽ {g.stats.scored} · saldo {g.stats.balance > 0 ? `+${g.stats.balance}` : g.stats.balance}
+              </Text>
+            </View>
+          ))}
+        </Card>
+      )}
 
       {pendingGames.length > 0 && (
         <Card style={styles.section}>
@@ -307,5 +333,21 @@ const styles = StyleSheet.create({
     color: colors.warning,
     fontSize: 11,
     marginTop: spacing.xs,
+  },
+  goalGroupRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  goalGroupName: {
+    color: colors.text,
+    fontSize: 14,
+    flex: 1,
+  },
+  goalGroupStats: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

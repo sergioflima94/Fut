@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors, radius, spacing } from '@/constants/theme';
+import { daysUntilExpiry, isPremiumActive } from '@/lib/premium';
 
 const BENEFITS = [
   'Sem anúncios em nenhuma tela',
@@ -12,20 +13,31 @@ const BENEFITS = [
   'Apoia o desenvolvimento do app',
 ];
 
+// URLs oficiais de gerenciamento de assinatura de cada loja.
+const MANAGE_SUBSCRIPTION_URL = Platform.select({
+  ios: 'itms-apps://apps.apple.com/account/subscriptions',
+  android: 'https://play.google.com/store/account/subscriptions',
+  default: 'https://play.google.com/store/account/subscriptions',
+});
+
 interface PremiumSectionProps {
-  isPremium: boolean;
   premiumSince: string | null;
+  premiumUntil: string | null;
+  autoRenew: boolean;
   onSubscribe: () => void;
-  onCancel: () => void;
+  onCancelAutoRenew: () => void;
 }
 
-export function PremiumSection({ isPremium, premiumSince, onSubscribe, onCancel }: PremiumSectionProps) {
+export function PremiumSection({ premiumSince, premiumUntil, autoRenew, onSubscribe, onCancelAutoRenew }: PremiumSectionProps) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const active = isPremiumActive({ premiumUntil });
 
   function handleConfirm() {
     setLoading(true);
-    // Checkout simulado (modo demonstração) — sem gateway de pagamento real conectado.
+    // Checkout simulado (modo demonstração): em produção isso abre a tela nativa de
+    // assinatura da App Store / Google Play — a cobrança e a renovação mensal ficam
+    // inteiramente por conta delas, não do nosso app.
     setTimeout(() => {
       onSubscribe();
       setLoading(false);
@@ -33,7 +45,14 @@ export function PremiumSection({ isPremium, premiumSince, onSubscribe, onCancel 
     }, 700);
   }
 
-  if (isPremium) {
+  async function handleManageSubscription() {
+    if (MANAGE_SUBSCRIPTION_URL) {
+      Linking.openURL(MANAGE_SUBSCRIPTION_URL).catch(() => {});
+    }
+    onCancelAutoRenew();
+  }
+
+  if (active) {
     return (
       <Card style={[styles.card, styles.cardActive]}>
         <View style={styles.headerRow}>
@@ -43,12 +62,19 @@ export function PremiumSection({ isPremium, premiumSince, onSubscribe, onCancel 
         {premiumSince && (
           <Text style={styles.subText}>Assinante desde {new Date(premiumSince).toLocaleDateString('pt-BR')}</Text>
         )}
-        <Pressable onPress={onCancel}>
-          <Text style={styles.cancelLink}>Cancelar assinatura</Text>
+        <Text style={styles.subText}>
+          {autoRenew
+            ? `Renova automaticamente em ${new Date(premiumUntil!).toLocaleDateString('pt-BR')} (${daysUntilExpiry(premiumUntil)} dias)`
+            : `Sem renovação automática — vence em ${new Date(premiumUntil!).toLocaleDateString('pt-BR')} (${daysUntilExpiry(premiumUntil)} dias) e o benefício cai`}
+        </Text>
+        <Pressable onPress={handleManageSubscription}>
+          <Text style={styles.manageLink}>Gerenciar assinatura (App Store / Google Play)</Text>
         </Pressable>
       </Card>
     );
   }
+
+  const expired = !!premiumSince && !active;
 
   return (
     <Card style={styles.card}>
@@ -56,6 +82,12 @@ export function PremiumSection({ isPremium, premiumSince, onSubscribe, onCancel 
         <Ionicons name="star-outline" size={18} color={colors.gold} />
         <Text style={styles.title}>Pelada Premium</Text>
       </View>
+      {expired && (
+        <Text style={styles.expiredNotice}>
+          Sua assinatura venceu em {new Date(premiumUntil!).toLocaleDateString('pt-BR')} e o benefício caiu. Assine de
+          novo para voltar a aproveitar.
+        </Text>
+      )}
       {BENEFITS.map((b) => (
         <View key={b} style={styles.benefitRow}>
           <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
@@ -64,13 +96,17 @@ export function PremiumSection({ isPremium, premiumSince, onSubscribe, onCancel 
       ))}
 
       {!checkoutOpen ? (
-        <Button label="Assinar por R$ 9,90/mês" onPress={() => setCheckoutOpen(true)} style={{ marginTop: spacing.sm }} />
+        <Button
+          label={expired ? 'Assinar de novo — R$ 9,90/mês' : 'Assinar por R$ 9,90/mês'}
+          onPress={() => setCheckoutOpen(true)}
+          style={{ marginTop: spacing.sm }}
+        />
       ) : (
         <View style={styles.checkout}>
           <Text style={styles.checkoutTitle}>Confirmar assinatura</Text>
           <Text style={styles.checkoutText}>
-            Modo demonstração: nenhum pagamento real será cobrado. Em produção aqui entraria o checkout da loja
-            (App Store / Google Play) ou de um gateway como Stripe/Mercado Pago.
+            Assinatura mensal (renova automaticamente todo mês até você cancelar) gerenciada pela App Store / Google
+            Play — não guardamos seu cartão. Modo demonstração: nenhum pagamento real será cobrado agora.
           </Text>
           <View style={styles.checkoutActions}>
             <Button label="Voltar" variant="ghost" small onPress={() => setCheckoutOpen(false)} disabled={loading} />
@@ -117,10 +153,15 @@ const styles = StyleSheet.create({
   subText: {
     color: colors.textMuted,
     fontSize: 12,
-    marginBottom: spacing.xs,
   },
-  cancelLink: {
+  expiredNotice: {
     color: colors.danger,
+    fontSize: 12,
+    marginBottom: spacing.xs,
+    lineHeight: 16,
+  },
+  manageLink: {
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '600',
     marginTop: spacing.xs,

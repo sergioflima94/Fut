@@ -98,12 +98,16 @@ O app tem três mecanismos de monetização implementados na camada de produto, 
 fluxos de demonstração para validar a experiência antes de integrar algo de verdade.
 
 - **Assinatura Premium individual** (`src/components/PremiumSection.tsx`, tela
-  Perfil): remove os anúncios e libera estilos/fundo de foto exclusivos na carta
-  (`src/constants/cardStyles.ts`, campo `premium`). O botão "Assinar" abre um
-  checkout simulado — ao confirmar, `useAppStore.upgradeToPremium` apenas marca
-  `player.isPremium = true` localmente, sem cobrar nada.
+  Perfil): é mensal de verdade — `player.premiumUntil` guarda até quando o período
+  pago vale (`src/lib/premium.ts`); sem renovar, `isPremiumActive()` passa a retornar
+  `false` e o jogador perde os benefícios (sem anúncios, estilos/fundo de foto
+  exclusivos em `src/constants/cardStyles.ts`). O checkout é simulado, mas a intenção
+  é que a assinatura seja **gerenciada pela App Store / Google Play** (cobrança,
+  renovação e cancelamento ficam por conta delas, não do nosso app) — por isso o botão
+  "Gerenciar assinatura" já abre a tela nativa de assinaturas de cada loja.
 - **Anúncios** (`src/components/AdBanner.tsx`): banners fixos ("house ads") exibidos
-  para quem não é Premium, em Agenda e Elenco. Não é um SDK de anúncios real.
+  para quem não é Premium nem já pagou o rateio de algum jogo (`src/hooks/useIsAdFree.ts`),
+  em Agenda e Elenco. Não é um SDK de anúncios real.
 - **Rateio do jogo / "vaquinha"** (`src/components/PaymentSplitSection.tsx`): o admin
   define o custo da quadra (na agenda ou direto no jogo), o app calcula o valor por
   pessoa e cada jogador confirmado pode "marcar como pago". O admin também marca
@@ -113,7 +117,7 @@ fluxos de demonstração para validar a experiência antes de integrar algo de v
 
 | Recurso | O que trocar | Sugestão de provedor |
 |---|---|---|
-| Assinatura Premium | `PremiumSection.handleConfirm` → chamar compra real e só marcar `isPremium` após confirmação do provedor | [RevenueCat](https://www.revenuecat.com/) + IAP da App Store/Google Play (mais simples para assinatura mobile), ou [Stripe Billing](https://stripe.com/billing) se for cobrar fora das lojas |
+| Assinatura Premium | `PremiumSection.handleConfirm` → chamar a compra nativa real (IAP) e só marcar `premiumUntil` a partir do webhook/callback do provedor confirmando a assinatura (não do clique no botão) | [RevenueCat](https://www.revenuecat.com/) por cima de IAP da App Store/Google Play — é quem sincroniza `premiumUntil`/auto-renovação de verdade |
 | Rateio da quadra (Pix/cartão) | `PaymentSplitSection` → em vez de `setPaymentStatus` direto, abrir um checkout (Pix Copia-e-Cola, link de pagamento) e só marcar `paid` via webhook confirmando o pagamento | [Mercado Pago](https://www.mercadopago.com.br/developers) ou [Stripe](https://stripe.com/br) (ambos têm Pix) |
 | Anúncios | Trocar `AdBanner` por um componente nativo de anúncios | [react-native-google-mobile-ads](https://docs.page/invertase/react-native-google-mobile-ads) (AdMob) — requer EAS Build/dev client, não funciona no Expo Go |
 
@@ -121,10 +125,27 @@ Qualquer integração de pagamento real deve rodar no backend (Supabase Edge Fun
 por exemplo) para validar webhooks e nunca confiar apenas no que o app cliente diz —
 hoje, como tudo é local/mock, isso ainda não existe.
 
+## Grupos, convidados e convites
+
+- Um jogador pode fazer parte de **mais de uma pelada** (`useAppStore.currentPeladaId`
+  + `src/hooks/useCurrentPelada.ts`); a Agenda mostra um seletor de pelada quando o
+  jogador está em mais de uma. Gols na carta mostram o total geral, e o Perfil lista o
+  detalhe por grupo (`computePlayerGoalStatsByGroup`, em `src/lib/goals.ts`).
+- **Convite**: cada pelada tem um `inviteCode` único. No Admin, "Convidar jogadores"
+  mostra o código e compartilha (via `Share.share`, que inclui WhatsApp entre as
+  opções) uma mensagem pronta. Quem recebe usa a tela `/entrar-pelada` pra virar
+  membro (`useAppStore.joinPeladaByCode`).
+- **Convidados avulsos**: o admin pode adicionar alguém que não tem o app direto na
+  chamada de um jogo específico ("+ Adicionar convidado", em `useAppStore.addGuest`).
+  Entra confirmado (ou na espera, se lotado), participa do sorteio normalmente, e
+  aparece com uma badge "Convidado" — mas não vira membro da pelada nem aparece no
+  Elenco.
+
 ## Próximos passos sugeridos
 
 - Migrar as ações da store para Supabase (auth real, dados compartilhados entre
   jogadores) e ligar o Realtime no cronômetro/fila de rodízio.
 - Notificações push (Expo Notifications) para lembrar da chamada e do resultado do
   sorteio.
-- Convite de jogadores por link/WhatsApp para entrar numa pelada.
+- Deep link real pro convite (ex.: `pelada://entrar/CODIGO`) abrir `/entrar-pelada`
+  com o código já preenchido, além do fluxo manual atual.

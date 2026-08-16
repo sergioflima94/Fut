@@ -28,23 +28,27 @@ const nextWeekday = (dayOfWeek: number, hour: number, minute: number) => {
 /** Fotos de exemplo (serviço público de avatares aleatórios) só para o modo demonstração. */
 const demoPhoto = (seed: number) => `https://i.pravatar.cc/300?img=${seed}`;
 
+const demoPremiumActiveUntil = iso(new Date(now.getTime() + 20 * 24 * 60 * 60 * 1000));
+// assinatura vencida de propósito, pra já mostrar no demo o estado "perdeu o benefício, precisa renovar"
+const demoPremiumExpired = iso(new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000));
+
 export const MOCK_PLAYERS: Player[] = [
-  { id: 'p1', authUserId: 'auth-1', name: 'Você', nickname: null, avatarUrl: null, cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p2', authUserId: null, name: 'Bruno Silva', nickname: 'Brunão', avatarUrl: demoPhoto(12), cardStyleId: 'sapphire', cardBackgroundUrl: null, isPremium: true, premiumSince: iso(now), phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p3', authUserId: null, name: 'Carlos Eduardo', nickname: 'Cadu', avatarUrl: demoPhoto(13), cardStyleId: 'obsidian', cardBackgroundUrl: null, isPremium: true, premiumSince: iso(now), phone: null, preferredPosition: 'goalkeeper', createdAt: iso(now) },
-  { id: 'p4', authUserId: null, name: 'Diego Alves', nickname: null, avatarUrl: demoPhoto(14), cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p5', authUserId: null, name: 'Eduardo Santos', nickname: 'Duda', avatarUrl: demoPhoto(15), cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p6', authUserId: null, name: 'Fábio Costa', nickname: null, avatarUrl: demoPhoto(17), cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p7', authUserId: null, name: 'Gabriel Souza', nickname: 'Gabigol', avatarUrl: demoPhoto(18), cardStyleId: 'holographic', cardBackgroundUrl: null, isPremium: true, premiumSince: iso(now), phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p8', authUserId: null, name: 'Henrique Lima', nickname: null, avatarUrl: demoPhoto(19), cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'goalkeeper', createdAt: iso(now) },
-  { id: 'p9', authUserId: null, name: 'Igor Martins', nickname: null, avatarUrl: demoPhoto(20), cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p10', authUserId: null, name: 'João Pedro', nickname: 'JP', avatarUrl: demoPhoto(21), cardStyleId: null, cardBackgroundUrl: 'https://picsum.photos/seed/pelada-jp/400/540', isPremium: true, premiumSince: iso(now), phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p11', authUserId: null, name: 'Lucas Ferreira', nickname: null, avatarUrl: demoPhoto(22), cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p12', authUserId: null, name: 'Marcelo Rocha', nickname: null, avatarUrl: demoPhoto(23), cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p13', authUserId: null, name: 'Nathan Oliveira', nickname: null, avatarUrl: demoPhoto(24), cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p14', authUserId: null, name: 'Otávio Ramos', nickname: null, avatarUrl: demoPhoto(25), cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p15', authUserId: null, name: 'Paulo Vitor', nickname: 'PV', avatarUrl: demoPhoto(26), cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
-  { id: 'p16', authUserId: null, name: 'Rafael Almeida', nickname: null, avatarUrl: demoPhoto(27), cardStyleId: null, cardBackgroundUrl: null, isPremium: false, premiumSince: null, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p1', authUserId: 'auth-1', name: 'Você', nickname: null, avatarUrl: null, cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p2', authUserId: null, name: 'Bruno Silva', nickname: 'Brunão', avatarUrl: demoPhoto(12), cardStyleId: 'sapphire', cardBackgroundUrl: null, premiumSince: iso(now), premiumUntil: demoPremiumActiveUntil, premiumAutoRenew: true, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p3', authUserId: null, name: 'Carlos Eduardo', nickname: 'Cadu', avatarUrl: demoPhoto(13), cardStyleId: 'obsidian', cardBackgroundUrl: null, premiumSince: iso(now), premiumUntil: demoPremiumExpired, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'goalkeeper', createdAt: iso(now) },
+  { id: 'p4', authUserId: null, name: 'Diego Alves', nickname: null, avatarUrl: demoPhoto(14), cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p5', authUserId: null, name: 'Eduardo Santos', nickname: 'Duda', avatarUrl: demoPhoto(15), cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p6', authUserId: null, name: 'Fábio Costa', nickname: null, avatarUrl: demoPhoto(17), cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p7', authUserId: null, name: 'Gabriel Souza', nickname: 'Gabigol', avatarUrl: demoPhoto(18), cardStyleId: 'holographic', cardBackgroundUrl: null, premiumSince: iso(now), premiumUntil: demoPremiumActiveUntil, premiumAutoRenew: true, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p8', authUserId: null, name: 'Henrique Lima', nickname: null, avatarUrl: demoPhoto(19), cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'goalkeeper', createdAt: iso(now) },
+  { id: 'p9', authUserId: null, name: 'Igor Martins', nickname: null, avatarUrl: demoPhoto(20), cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p10', authUserId: null, name: 'João Pedro', nickname: 'JP', avatarUrl: demoPhoto(21), cardStyleId: null, cardBackgroundUrl: 'https://picsum.photos/seed/pelada-jp/400/540', premiumSince: iso(now), premiumUntil: demoPremiumActiveUntil, premiumAutoRenew: true, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p11', authUserId: null, name: 'Lucas Ferreira', nickname: null, avatarUrl: demoPhoto(22), cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p12', authUserId: null, name: 'Marcelo Rocha', nickname: null, avatarUrl: demoPhoto(23), cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p13', authUserId: null, name: 'Nathan Oliveira', nickname: null, avatarUrl: demoPhoto(24), cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p14', authUserId: null, name: 'Otávio Ramos', nickname: null, avatarUrl: demoPhoto(25), cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p15', authUserId: null, name: 'Paulo Vitor', nickname: 'PV', avatarUrl: demoPhoto(26), cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
+  { id: 'p16', authUserId: null, name: 'Rafael Almeida', nickname: null, avatarUrl: demoPhoto(27), cardStyleId: null, cardBackgroundUrl: null, premiumSince: null, premiumUntil: null, premiumAutoRenew: false, isGuest: false, phone: null, preferredPosition: 'line', createdAt: iso(now) },
 ];
 
 export const CURRENT_PLAYER_ID = 'p1';
@@ -56,14 +60,34 @@ export const MOCK_PELADA: Pelada = {
   sport: 'society',
   defaultMaxPlayers: 16,
   defaultMatchMinutes: 10,
+  inviteCode: 'AMIGOS-QUI',
   createdBy: 'p1',
   createdAt: iso(now),
 };
+
+/** Segunda pelada de exemplo, pra mostrar que um jogador pode fazer parte de mais de um grupo. */
+export const MOCK_PELADA_2: Pelada = {
+  id: 'pel2',
+  name: 'Society da Empresa - Sábados',
+  description: 'Fut na quadra do bairro, sábado de manhã',
+  sport: 'society',
+  defaultMaxPlayers: 14,
+  defaultMatchMinutes: 8,
+  inviteCode: 'EMPRESA-SAB',
+  createdBy: 'p2',
+  createdAt: iso(now),
+};
+
+export const MOCK_PELADAS: Pelada[] = [MOCK_PELADA, MOCK_PELADA_2];
 
 export const MOCK_MEMBERSHIPS: PeladaMembership[] = [
   { peladaId: 'pel1', playerId: 'p1', role: 'admin', active: true, joinedAt: iso(now) },
   { peladaId: 'pel1', playerId: 'p2', role: 'admin', active: true, joinedAt: iso(now) },
   ...MOCK_PLAYERS.slice(2).map((p) => ({ peladaId: 'pel1', playerId: p.id, role: 'member' as const, active: true, joinedAt: iso(now) })),
+  // "Você" ainda não faz parte dessa aqui — dá pra testar o fluxo de convite/entrar com o código EMPRESA-SAB
+  { peladaId: 'pel2', playerId: 'p2', role: 'admin', active: true, joinedAt: iso(now) },
+  { peladaId: 'pel2', playerId: 'p5', role: 'member', active: true, joinedAt: iso(now) },
+  { peladaId: 'pel2', playerId: 'p9', role: 'member', active: true, joinedAt: iso(now) },
 ];
 
 export const MOCK_FIELDS: Field[] = [

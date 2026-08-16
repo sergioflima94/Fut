@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
 import { Avatar } from '@/components/ui/Avatar';
@@ -11,6 +11,7 @@ import { Screen } from '@/components/ui/Screen';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { TextField } from '@/components/ui/TextField';
 import { colors, spacing } from '@/constants/theme';
+import { useCurrentPelada } from '@/hooks/useCurrentPelada';
 import { drawMethodLabel, formatGameDateShort, recurrenceLabel, WEEKDAY_LABELS } from '@/lib/format';
 import { formatBRL } from '@/lib/payments';
 import { computeNextOccurrence } from '@/lib/schedule';
@@ -19,7 +20,7 @@ import type { DrawMethod, RecurrenceType } from '@/types';
 
 export default function AdminScreen() {
   const currentPlayerId = useAppStore((s) => s.currentPlayerId);
-  const pelada = useAppStore((s) => s.peladas[0]);
+  const pelada = useCurrentPelada();
   const isAdmin = useAppStore((s) => s.isAdmin(currentPlayerId, pelada.id));
 
   if (!isAdmin) {
@@ -37,6 +38,7 @@ export default function AdminScreen() {
     <Screen>
       <Text style={styles.title}>Administração</Text>
       <PeladaInfoSection />
+      <InviteSection />
       <AdminsSection />
       <FieldsSection />
       <SchedulesSection />
@@ -46,7 +48,7 @@ export default function AdminScreen() {
 }
 
 function PeladaInfoSection() {
-  const pelada = useAppStore((s) => s.peladas[0]);
+  const pelada = useCurrentPelada();
   const updatePeladaInfo = useAppStore((s) => s.updatePeladaInfo);
 
   const [name, setName] = useState(pelada.name);
@@ -75,8 +77,35 @@ function PeladaInfoSection() {
   );
 }
 
+function InviteSection() {
+  const pelada = useCurrentPelada();
+
+  async function handleShare() {
+    try {
+      await Share.share({
+        message: `Bora jogar? Entra na pelada "${pelada.name}" comigo!\n\nBaixe o app Pelada, toque em "Entrar em uma pelada" e use o código: ${pelada.inviteCode}`,
+      });
+    } catch {
+      // usuário cancelou o compartilhamento, nada a fazer
+    }
+  }
+
+  return (
+    <Card style={styles.section}>
+      <Text style={styles.sectionTitle}>Convidar jogadores</Text>
+      <Text style={styles.rowSub}>
+        Compartilhe o código abaixo com quem você quer chamar pra pelada — inclusive quem ainda não tem o app.
+      </Text>
+      <View style={styles.inviteCodeBox}>
+        <Text style={styles.inviteCodeText}>{pelada.inviteCode}</Text>
+      </View>
+      <Button label="Compartilhar convite" onPress={handleShare} />
+    </Card>
+  );
+}
+
 function AdminsSection() {
-  const pelada = useAppStore((s) => s.peladas[0]);
+  const pelada = useCurrentPelada();
   const players = useAppStore((s) => s.players);
   const memberships = useAppStore(useShallow((s) => s.memberships.filter((m) => m.peladaId === pelada.id)));
   const addAdmin = useAppStore((s) => s.addAdmin);
@@ -114,8 +143,8 @@ function AdminsSection() {
 }
 
 function FieldsSection() {
-  const pelada = useAppStore((s) => s.peladas[0]);
-  const fields = useAppStore((s) => s.fields);
+  const pelada = useCurrentPelada();
+  const fields = useAppStore(useShallow((s) => s.fields.filter((f) => f.peladaId === pelada.id)));
   const addField = useAppStore((s) => s.addField);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -157,10 +186,10 @@ function FieldsSection() {
 }
 
 function SchedulesSection() {
-  const pelada = useAppStore((s) => s.peladas[0]);
-  const fields = useAppStore((s) => s.fields);
-  const schedules = useAppStore((s) => s.schedules);
-  const games = useAppStore((s) => s.games);
+  const pelada = useCurrentPelada();
+  const fields = useAppStore(useShallow((s) => s.fields.filter((f) => f.peladaId === pelada.id)));
+  const schedules = useAppStore(useShallow((s) => s.schedules.filter((sc) => sc.peladaId === pelada.id)));
+  const games = useAppStore(useShallow((s) => s.games.filter((g) => g.peladaId === pelada.id)));
   const addSchedule = useAppStore((s) => s.addSchedule);
   const addGameFromSchedule = useAppStore((s) => s.addGameFromSchedule);
 
@@ -287,7 +316,7 @@ function SchedulesSection() {
 }
 
 function PunishmentsSection() {
-  const pelada = useAppStore((s) => s.peladas[0]);
+  const pelada = useCurrentPelada();
   const players = useAppStore((s) => s.players);
   const punishments = useAppStore(useShallow((s) => s.punishments.filter((p) => p.peladaId === pelada.id)));
 
@@ -326,6 +355,21 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     marginBottom: spacing.lg,
+  },
+  inviteCodeBox: {
+    backgroundColor: colors.bgElevated,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderStyle: 'dashed',
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  inviteCodeText: {
+    color: colors.primary,
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: 2,
   },
   notAdmin: {
     alignItems: 'center',
