@@ -1,0 +1,21 @@
+import { Stack } from 'expo-router';
+
+import { colors } from '@/constants/theme';
+
+export default function GameLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.bgElevated },
+        headerTintColor: colors.text,
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: colors.bg },
+      }}
+    >
+      <Stack.Screen name="index" options={{ title: 'Jogo' }} />
+      <Stack.Screen name="sorteio" options={{ title: 'Sortear times' }} />
+      <Stack.Screen name="cronometro" options={{ title: 'Cronômetro' }} />
+      <Stack.Screen name="avaliar" options={{ title: 'Avaliar jogadores' }} />
+    </Stack>
+  );
+}

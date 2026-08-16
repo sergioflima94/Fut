@@ -1,0 +1,70 @@
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { colors, radius, spacing } from '@/constants/theme';
+
+interface Option<T extends string> {
+  value: T;
+  label: string;
+}
+
+interface SegmentedControlProps<T extends string> {
+  label?: string;
+  options: Option<T>[];
+  value: T;
+  onChange: (value: T) => void;
+}
+
+export function SegmentedControl<T extends string>({ label, options, value, onChange }: SegmentedControlProps<T>) {
+  return (
+    <View style={styles.wrap}>
+      {label && <Text style={styles.label}>{label}</Text>}
+      <View style={styles.row}>
+        {options.map((opt) => (
+          <Pressable
+            key={opt.value}
+            onPress={() => onChange(opt.value)}
+            style={[styles.option, value === opt.value && styles.optionActive]}
+          >
+            <Text style={[styles.optionText, value === opt.value && styles.optionTextActive]}>{opt.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrap: {
+    marginBottom: spacing.md,
+  },
+  label: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginBottom: spacing.xs,
+  },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  option: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    backgroundColor: colors.bgElevated,
+  },
+  optionActive: {
+    borderColor: colors.primary,
+    backgroundColor: 'rgba(34,197,94,0.15)',
+  },
+  optionText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  optionTextActive: {
+    color: colors.primary,
+  },
+});

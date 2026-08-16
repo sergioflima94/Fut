@@ -1,0 +1,154 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { colors, radius, spacing } from '@/constants/theme';
+import { overallTier } from '@/lib/ratings';
+import type { PlayerOverall } from '@/types';
+
+interface PlayerCardProps {
+  name: string;
+  nickname?: string | null;
+  position: 'goalkeeper' | 'line';
+  overall: PlayerOverall;
+  width?: number;
+}
+
+export function PlayerCard({ name, nickname, position, overall, width = 160 }: PlayerCardProps) {
+  const tier = overallTier(overall.overall);
+  const height = width * 1.35;
+
+  return (
+    <LinearGradient
+      colors={[tier.color, colors.bgElevated]}
+      start={{ x: 0.1, y: 0 }}
+      end={{ x: 0.9, y: 1 }}
+      style={[styles.card, { width, height, borderColor: tier.color }]}
+    >
+      <View style={styles.header}>
+        <Text style={styles.overall}>{overall.overall}</Text>
+        <Text style={styles.position}>{position === 'goalkeeper' ? 'GOL' : 'LIN'}</Text>
+      </View>
+
+      <View style={styles.avatarWrap}>
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarInitials}>
+            {name
+              .trim()
+              .split(/\s+/)
+              .slice(0, 2)
+              .map((p) => p[0])
+              .join('')
+              .toUpperCase()}
+          </Text>
+        </View>
+      </View>
+
+      <Text style={styles.name} numberOfLines={1}>
+        {nickname || name}
+      </Text>
+      <Text style={styles.tierLabel}>{tier.label}</Text>
+
+      <View style={styles.statsRow}>
+        <Stat label="ATA" value={overall.attack} />
+        <Stat label="DEF" value={overall.defense} />
+        <Stat label="VEL" value={overall.pace} />
+      </View>
+      <Text style={styles.ratingsCount}>
+        {overall.ratingsCount === 0 ? 'sem avaliações' : `${overall.ratingsCount} avaliações`}
+      </Text>
+    </LinearGradient>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    padding: spacing.md,
+    justifyContent: 'flex-start',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  overall: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.white,
+  },
+  position: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.white,
+    opacity: 0.85,
+  },
+  avatarWrap: {
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  avatarCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.4)',
+  },
+  avatarInitials: {
+    color: colors.white,
+    fontWeight: '800',
+    fontSize: 18,
+  },
+  name: {
+    marginTop: spacing.sm,
+    textAlign: 'center',
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  tierLabel: {
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 11,
+    marginTop: 2,
+    marginBottom: spacing.sm,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.25)',
+    paddingTop: spacing.sm,
+  },
+  stat: {
+    alignItems: 'center',
+  },
+  statValue: {
+    color: colors.white,
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  statLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+    marginTop: 2,
+  },
+  ratingsCount: {
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 10,
+    marginTop: spacing.xs,
+  },
+});

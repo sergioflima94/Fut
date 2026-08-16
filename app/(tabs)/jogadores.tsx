@@ -1,0 +1,62 @@
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { PlayerCard } from '@/components/PlayerCard';
+import { colors, spacing } from '@/constants/theme';
+import { computeAllOveralls } from '@/lib/ratings';
+import { useAppStore } from '@/store/useAppStore';
+
+export default function JogadoresScreen() {
+  const players = useAppStore((s) => s.players);
+  const ratings = useAppStore((s) => s.ratings);
+  const overalls = computeAllOveralls(
+    players.map((p) => p.id),
+    ratings,
+  );
+
+  const sorted = [...players].sort((a, b) => overalls[b.id].overall - overalls[a.id].overall);
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <Text style={styles.title}>Elenco</Text>
+      <FlatList
+        data={sorted}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.list}
+        renderItem={({ item }) => (
+          <View style={styles.cardWrap}>
+            <PlayerCard name={item.name} nickname={item.nickname} position={item.preferredPosition} overall={overalls[item.id]} width={150} />
+          </View>
+        )}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  list: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  row: {
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  cardWrap: {
+    marginBottom: spacing.xs,
+  },
+});
