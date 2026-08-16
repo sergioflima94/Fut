@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 import { AdBanner } from '@/components/AdBanner';
 import { GameCard } from '@/components/GameCard';
@@ -11,7 +12,7 @@ import { useAppStore } from '@/store/useAppStore';
 
 export default function AgendaScreen() {
   const pelada = useCurrentPelada();
-  const games = useAppStore((s) => s.games.filter((g) => g.peladaId === pelada.id));
+  const games = useAppStore(useShallow((s) => s.games.filter((g) => g.peladaId === pelada.id)));
   const adFree = useIsAdFree();
 
   const now = Date.now();
