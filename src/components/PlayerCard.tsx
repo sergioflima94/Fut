@@ -13,12 +13,22 @@ interface PlayerCardProps {
   nickname?: string | null;
   photoUrl?: string | null;
   cardStyleId?: string | null;
+  cardBackgroundUrl?: string | null;
   position: 'goalkeeper' | 'line';
   overall: PlayerOverall;
   width?: number;
 }
 
-export function PlayerCard({ name, nickname, photoUrl, cardStyleId, position, overall, width = 160 }: PlayerCardProps) {
+export function PlayerCard({
+  name,
+  nickname,
+  photoUrl,
+  cardStyleId,
+  cardBackgroundUrl,
+  position,
+  overall,
+  width = 160,
+}: PlayerCardProps) {
   const tier = overallTier(overall.overall);
   const customStyle = getCardStyle(cardStyleId ?? null);
   const [gradientTop, gradientBase] = customStyle.colors ?? [tier.color, colors.bgElevated];
@@ -26,14 +36,36 @@ export function PlayerCard({ name, nickname, photoUrl, cardStyleId, position, ov
   const height = width * 1.35;
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto = !!photoUrl && !photoFailed;
+  const [bgFailed, setBgFailed] = useState(false);
+  const showBackground = !!cardBackgroundUrl && !bgFailed;
 
   return (
-    <LinearGradient
-      colors={[gradientTop, gradientBase]}
-      start={{ x: 0.1, y: 0 }}
-      end={{ x: 0.9, y: 1 }}
-      style={[styles.card, { width, height, borderColor }]}
-    >
+    <View style={[styles.card, { width, height, borderColor }]}>
+      {showBackground ? (
+        <Image
+          source={{ uri: cardBackgroundUrl }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={150}
+          onError={() => setBgFailed(true)}
+        />
+      ) : (
+        <LinearGradient
+          colors={[gradientTop, gradientBase]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
+      {showBackground && (
+        <LinearGradient
+          colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.75)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
+
       <View style={styles.header}>
         <Text style={styles.overall}>{overall.overall}</Text>
         <Text style={styles.position}>{position === 'goalkeeper' ? 'GOL' : 'LIN'}</Text>
@@ -76,7 +108,7 @@ export function PlayerCard({ name, nickname, photoUrl, cardStyleId, position, ov
       <Text style={styles.ratingsCount}>
         {overall.ratingsCount === 0 ? 'sem avaliações' : `${overall.ratingsCount} avaliações`}
       </Text>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -95,6 +127,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: spacing.md,
     justifyContent: 'flex-start',
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',

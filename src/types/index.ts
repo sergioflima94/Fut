@@ -26,6 +26,8 @@ export interface Player {
   preferredPosition: PlayerPosition;
   /** Estilo de cor/fundo escolhido pelo jogador para a própria carta. null = usa a cor da faixa (bronze/prata/ouro/especial). */
   cardStyleId: string | null;
+  /** Foto escolhida pelo jogador como fundo da carta. Quando definida, tem prioridade sobre cardStyleId. */
+  cardBackgroundUrl: string | null;
   createdAt: string;
 }
 

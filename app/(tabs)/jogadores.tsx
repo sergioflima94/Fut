@@ -32,6 +32,7 @@ export default function JogadoresScreen() {
               nickname={item.nickname}
               photoUrl={item.avatarUrl}
               cardStyleId={item.cardStyleId}
+              cardBackgroundUrl={item.cardBackgroundUrl}
               position={item.preferredPosition}
               overall={overalls[item.id]}
               width={150}

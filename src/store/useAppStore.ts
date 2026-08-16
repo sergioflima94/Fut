@@ -94,6 +94,7 @@ interface AppState {
   updateCurrentPlayerProfile: (input: { name: string; nickname: string | null; preferredPosition: Player['preferredPosition']; phone: string | null }) => void;
   setPlayerPhoto: (playerId: string, photoUrl: string) => void;
   setPlayerCardStyle: (playerId: string, cardStyleId: string | null) => void;
+  setPlayerCardBackground: (playerId: string, cardBackgroundUrl: string | null) => void;
   updatePeladaInfo: (peladaId: string, input: { name: string; description: string | null }) => void;
 }
 
@@ -306,6 +307,12 @@ export const useAppStore = create<AppState>()(
       setPlayerCardStyle: (playerId, cardStyleId) => {
         set((state) => ({
           players: state.players.map((p) => (p.id === playerId ? { ...p, cardStyleId } : p)),
+        }));
+      },
+
+      setPlayerCardBackground: (playerId, cardBackgroundUrl) => {
+        set((state) => ({
+          players: state.players.map((p) => (p.id === playerId ? { ...p, cardBackgroundUrl } : p)),
         }));
       },
 

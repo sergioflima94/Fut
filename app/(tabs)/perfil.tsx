@@ -27,8 +27,10 @@ export default function PerfilScreen() {
   const punishments = useAppStore(useShallow((s) => s.punishments.filter((p) => p.playerId === currentPlayerId)));
   const setPlayerPhoto = useAppStore((s) => s.setPlayerPhoto);
   const setPlayerCardStyle = useAppStore((s) => s.setPlayerCardStyle);
+  const setPlayerCardBackground = useAppStore((s) => s.setPlayerCardBackground);
   const logout = useAuthStore((s) => s.logout);
   const [pickingPhoto, setPickingPhoto] = useState(false);
+  const [pickingBg, setPickingBg] = useState(false);
 
   const overall = computePlayerOverall(currentPlayerId, ratings);
   const pendingGames = getPendingRatingGames(games, attendances, ratings, currentPlayerId);
@@ -40,6 +42,13 @@ export default function PerfilScreen() {
     setPickingPhoto(false);
   }
 
+  async function handleChangeBackground() {
+    setPickingBg(true);
+    const uri = await pickProfilePhoto();
+    if (uri) setPlayerCardBackground(currentPlayerId, uri);
+    setPickingBg(false);
+  }
+
   return (
     <Screen>
       <Pressable style={styles.cardCenter} onPress={handleChangePhoto} disabled={pickingPhoto}>
@@ -48,6 +57,7 @@ export default function PerfilScreen() {
           nickname={player.nickname}
           photoUrl={player.avatarUrl}
           cardStyleId={player.cardStyleId}
+          cardBackgroundUrl={player.cardBackgroundUrl}
           position={player.preferredPosition}
           overall={overall}
           width={190}
@@ -69,7 +79,7 @@ export default function PerfilScreen() {
         <Text style={styles.sectionTitle}>Personalizar carta</Text>
         <View style={styles.swatchRow}>
           {CARD_STYLES.map((style) => {
-            const selected = (player.cardStyleId ?? 'default') === style.id;
+            const selected = !player.cardBackgroundUrl && (player.cardStyleId ?? 'default') === style.id;
             const swatchColor = style.colors ? style.colors[0] : colors.textFaint;
             return (
               <Pressable
@@ -81,6 +91,28 @@ export default function PerfilScreen() {
               </Pressable>
             );
           })}
+        </View>
+
+        <View style={styles.bgRow}>
+          <Text style={styles.bgLabel}>
+            {player.cardBackgroundUrl ? 'Fundo com foto personalizada' : 'Ou use uma foto como fundo da carta'}
+          </Text>
+          <View style={styles.bgActions}>
+            <Pressable onPress={handleChangeBackground} disabled={pickingBg} style={styles.bgActionBtn}>
+              {pickingBg ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="image" size={14} color={colors.primary} />
+              )}
+              <Text style={styles.bgActionText}>{player.cardBackgroundUrl ? 'Trocar' : 'Escolher imagem'}</Text>
+            </Pressable>
+            {player.cardBackgroundUrl && (
+              <Pressable onPress={() => setPlayerCardBackground(currentPlayerId, null)} style={styles.bgActionBtn}>
+                <Ionicons name="close-circle" size={14} color={colors.danger} />
+                <Text style={[styles.bgActionText, { color: colors.danger }]}>Remover</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
       </Card>
 
@@ -206,5 +238,30 @@ const styles = StyleSheet.create({
   },
   swatchSelected: {
     borderColor: colors.text,
+  },
+  bgRow: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorder,
+    gap: spacing.sm,
+  },
+  bgLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  bgActions: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  bgActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  bgActionText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
