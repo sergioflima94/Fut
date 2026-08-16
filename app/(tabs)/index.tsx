@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { AdBanner } from '@/components/AdBanner';
 import { GameCard } from '@/components/GameCard';
 import { Screen } from '@/components/ui/Screen';
 import { colors, spacing } from '@/constants/theme';
@@ -8,6 +9,8 @@ import { useAppStore } from '@/store/useAppStore';
 export default function AgendaScreen() {
   const pelada = useAppStore((s) => s.peladas[0]);
   const games = useAppStore((s) => s.games);
+  const currentPlayerId = useAppStore((s) => s.currentPlayerId);
+  const isPremium = useAppStore((s) => s.players.find((p) => p.id === currentPlayerId)?.isPremium ?? false);
 
   const now = Date.now();
   const upcoming = games
@@ -23,6 +26,8 @@ export default function AgendaScreen() {
         <Text style={styles.peladaName}>{pelada.name}</Text>
         {pelada.description && <Text style={styles.peladaDescription}>{pelada.description}</Text>}
       </View>
+      {!isPremium && <AdBanner />}
+
       <Text style={styles.sectionTitle}>Próximos jogos</Text>
       {upcoming.length === 0 ? (
         <View style={styles.empty}>

@@ -1,11 +1,10 @@
 import { PropsWithChildren } from 'react';
-import { View, ViewStyle } from 'react-native';
-import { StyleSheet } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
 import { colors, radius, spacing } from '@/constants/theme';
 
 interface CardProps extends PropsWithChildren {
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function Card({ children, style }: CardProps) {

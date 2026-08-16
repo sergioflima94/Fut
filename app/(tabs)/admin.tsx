@@ -12,6 +12,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { TextField } from '@/components/ui/TextField';
 import { colors, spacing } from '@/constants/theme';
 import { drawMethodLabel, formatGameDateShort, recurrenceLabel, WEEKDAY_LABELS } from '@/lib/format';
+import { formatBRL } from '@/lib/payments';
 import { computeNextOccurrence } from '@/lib/schedule';
 import { useAppStore } from '@/store/useAppStore';
 import type { DrawMethod, RecurrenceType } from '@/types';
@@ -170,6 +171,7 @@ function SchedulesSection() {
   const [time, setTime] = useState('20:00');
   const [maxPlayers, setMaxPlayers] = useState(String(pelada.defaultMaxPlayers));
   const [drawMethod, setDrawMethod] = useState<DrawMethod>('rating');
+  const [fieldCost, setFieldCost] = useState('');
 
   function handleAdd() {
     if (!fieldId) return;
@@ -183,6 +185,7 @@ function SchedulesSection() {
       maxPlayers: Number(maxPlayers) || pelada.defaultMaxPlayers,
       matchMinutes: pelada.defaultMatchMinutes,
       drawMethod,
+      defaultFieldCost: fieldCost.trim() ? Number(fieldCost.replace(',', '.')) : null,
     });
     setOpen(false);
   }
@@ -207,6 +210,7 @@ function SchedulesSection() {
               </Text>
               <Text style={styles.rowSub}>
                 {field?.name} · até {s.maxPlayers} vagas · {drawMethodLabel(s.drawMethod)}
+                {s.defaultFieldCost ? ` · ${formatBRL(s.defaultFieldCost)}` : ''}
               </Text>
               <Text style={styles.rowSub}>Próximo: {formatGameDateShort(next.toISOString())}</Text>
             </View>
@@ -248,6 +252,13 @@ function SchedulesSection() {
             options={fields.map((f) => ({ value: f.id, label: f.name }))}
           />
           <TextField label="Limite de vagas" value={maxPlayers} onChangeText={setMaxPlayers} keyboardType="number-pad" />
+          <TextField
+            label="Custo da quadra (opcional, para rateio)"
+            value={fieldCost}
+            onChangeText={setFieldCost}
+            placeholder="Ex: 240"
+            keyboardType="decimal-pad"
+          />
           <SegmentedControl
             label="Método de sorteio padrão"
             value={drawMethod}

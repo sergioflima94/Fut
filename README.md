@@ -91,6 +91,36 @@ supabase/schema.sql          schema completo + Row Level Security
   velocidade, de 1 a 5). A média vira a nota geral na escala 0-99, estilo carta de
   FIFA, com faixas de bronze/prata/ouro/especial.
 
+## Monetização (⚠️ simulada — não há dinheiro real envolvido)
+
+O app tem três mecanismos de monetização implementados na camada de produto, mas
+**nenhum deles está conectado a um provedor de pagamento ou anúncio real** — são
+fluxos de demonstração para validar a experiência antes de integrar algo de verdade.
+
+- **Assinatura Premium individual** (`src/components/PremiumSection.tsx`, tela
+  Perfil): remove os anúncios e libera estilos/fundo de foto exclusivos na carta
+  (`src/constants/cardStyles.ts`, campo `premium`). O botão "Assinar" abre um
+  checkout simulado — ao confirmar, `useAppStore.upgradeToPremium` apenas marca
+  `player.isPremium = true` localmente, sem cobrar nada.
+- **Anúncios** (`src/components/AdBanner.tsx`): banners fixos ("house ads") exibidos
+  para quem não é Premium, em Agenda e Elenco. Não é um SDK de anúncios real.
+- **Rateio do jogo / "vaquinha"** (`src/components/PaymentSplitSection.tsx`): o admin
+  define o custo da quadra (na agenda ou direto no jogo), o app calcula o valor por
+  pessoa e cada jogador confirmado pode "marcar como pago". O admin também marca
+  manualmente (ex.: quem pagou em dinheiro). Nenhum Pix/cartão é processado de fato.
+
+### Como conectar pagamento e anúncios de verdade
+
+| Recurso | O que trocar | Sugestão de provedor |
+|---|---|---|
+| Assinatura Premium | `PremiumSection.handleConfirm` → chamar compra real e só marcar `isPremium` após confirmação do provedor | [RevenueCat](https://www.revenuecat.com/) + IAP da App Store/Google Play (mais simples para assinatura mobile), ou [Stripe Billing](https://stripe.com/billing) se for cobrar fora das lojas |
+| Rateio da quadra (Pix/cartão) | `PaymentSplitSection` → em vez de `setPaymentStatus` direto, abrir um checkout (Pix Copia-e-Cola, link de pagamento) e só marcar `paid` via webhook confirmando o pagamento | [Mercado Pago](https://www.mercadopago.com.br/developers) ou [Stripe](https://stripe.com/br) (ambos têm Pix) |
+| Anúncios | Trocar `AdBanner` por um componente nativo de anúncios | [react-native-google-mobile-ads](https://docs.page/invertase/react-native-google-mobile-ads) (AdMob) — requer EAS Build/dev client, não funciona no Expo Go |
+
+Qualquer integração de pagamento real deve rodar no backend (Supabase Edge Functions,
+por exemplo) para validar webhooks e nunca confiar apenas no que o app cliente diz —
+hoje, como tudo é local/mock, isso ainda não existe.
+
 ## Próximos passos sugeridos
 
 - Migrar as ações da store para Supabase (auth real, dados compartilhados entre

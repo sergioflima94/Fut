@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useShallow } from 'zustand/react/shallow';
 
 import { PlayerCard } from '@/components/PlayerCard';
+import { PremiumSection } from '@/components/PremiumSection';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -28,9 +29,12 @@ export default function PerfilScreen() {
   const setPlayerPhoto = useAppStore((s) => s.setPlayerPhoto);
   const setPlayerCardStyle = useAppStore((s) => s.setPlayerCardStyle);
   const setPlayerCardBackground = useAppStore((s) => s.setPlayerCardBackground);
+  const upgradeToPremium = useAppStore((s) => s.upgradeToPremium);
+  const cancelPremium = useAppStore((s) => s.cancelPremium);
   const logout = useAuthStore((s) => s.logout);
   const [pickingPhoto, setPickingPhoto] = useState(false);
   const [pickingBg, setPickingBg] = useState(false);
+  const [showLockNotice, setShowLockNotice] = useState(false);
 
   const overall = computePlayerOverall(currentPlayerId, ratings);
   const pendingGames = getPendingRatingGames(games, attendances, ratings, currentPlayerId);
@@ -43,10 +47,23 @@ export default function PerfilScreen() {
   }
 
   async function handleChangeBackground() {
+    if (!player.isPremium) {
+      setShowLockNotice(true);
+      return;
+    }
     setPickingBg(true);
     const uri = await pickProfilePhoto();
     if (uri) setPlayerCardBackground(currentPlayerId, uri);
     setPickingBg(false);
+  }
+
+  function handleSelectStyle(styleId: string, premium: boolean) {
+    if (premium && !player.isPremium) {
+      setShowLockNotice(true);
+      return;
+    }
+    setShowLockNotice(false);
+    setPlayerCardStyle(currentPlayerId, styleId === 'default' ? null : styleId);
   }
 
   return (
@@ -75,19 +92,28 @@ export default function PerfilScreen() {
       <Text style={styles.name}>{player.name}</Text>
       {player.nickname && <Text style={styles.nickname}>"{player.nickname}"</Text>}
 
+      <PremiumSection
+        isPremium={player.isPremium}
+        premiumSince={player.premiumSince}
+        onSubscribe={() => upgradeToPremium(currentPlayerId)}
+        onCancel={() => cancelPremium(currentPlayerId)}
+      />
+
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Personalizar carta</Text>
         <View style={styles.swatchRow}>
           {CARD_STYLES.map((style) => {
             const selected = !player.cardBackgroundUrl && (player.cardStyleId ?? 'default') === style.id;
             const swatchColor = style.colors ? style.colors[0] : colors.textFaint;
+            const locked = style.premium && !player.isPremium;
             return (
               <Pressable
                 key={style.id}
-                onPress={() => setPlayerCardStyle(currentPlayerId, style.id === 'default' ? null : style.id)}
+                onPress={() => handleSelectStyle(style.id, style.premium)}
                 style={[styles.swatch, { backgroundColor: swatchColor }, selected && styles.swatchSelected]}
               >
                 {selected && <Ionicons name="checkmark" size={16} color={colors.white} />}
+                {!selected && locked && <Ionicons name="lock-closed" size={12} color="rgba(255,255,255,0.85)" />}
               </Pressable>
             );
           })}
@@ -95,14 +121,18 @@ export default function PerfilScreen() {
 
         <View style={styles.bgRow}>
           <Text style={styles.bgLabel}>
-            {player.cardBackgroundUrl ? 'Fundo com foto personalizada' : 'Ou use uma foto como fundo da carta'}
+            {player.cardBackgroundUrl
+              ? 'Fundo com foto personalizada'
+              : player.isPremium
+                ? 'Ou use uma foto como fundo da carta'
+                : 'Fundo com foto é exclusivo do Premium'}
           </Text>
           <View style={styles.bgActions}>
             <Pressable onPress={handleChangeBackground} disabled={pickingBg} style={styles.bgActionBtn}>
               {pickingBg ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Ionicons name="image" size={14} color={colors.primary} />
+                <Ionicons name={player.isPremium ? 'image' : 'lock-closed'} size={14} color={colors.primary} />
               )}
               <Text style={styles.bgActionText}>{player.cardBackgroundUrl ? 'Trocar' : 'Escolher imagem'}</Text>
             </Pressable>
@@ -113,6 +143,9 @@ export default function PerfilScreen() {
               </Pressable>
             )}
           </View>
+          {showLockNotice && !player.isPremium && (
+            <Text style={styles.lockNotice}>🔒 Esse recurso é exclusivo do Premium — assine para desbloquear.</Text>
+          )}
         </View>
       </Card>
 
@@ -263,5 +296,10 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 13,
     fontWeight: '600',
+  },
+  lockNotice: {
+    color: colors.warning,
+    fontSize: 11,
+    marginTop: spacing.xs,
   },
 });

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
+import { PaymentSplitSection } from '@/components/PaymentSplitSection';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -146,6 +147,14 @@ export default function GameDetailScreen() {
           <PlayerList title="Não vão" attendances={declined} nameOf={playerName} photoOf={playerPhoto} muted />
         )}
       </Card>
+
+      <PaymentSplitSection
+        gameId={game.id}
+        fieldCost={game.fieldCost}
+        confirmed={confirmed}
+        isAdmin={isAdmin}
+        currentPlayerId={currentPlayerId}
+      />
 
       {isAdmin && (
         <Card style={styles.section}>

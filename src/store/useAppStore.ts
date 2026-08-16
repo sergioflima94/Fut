@@ -8,6 +8,7 @@ import {
   MOCK_FIELDS,
   MOCK_GAMES,
   MOCK_MEMBERSHIPS,
+  MOCK_PAYMENTS,
   MOCK_PELADA,
   MOCK_PLAYERS,
   MOCK_PUNISHMENTS,
@@ -24,6 +25,9 @@ import type {
   Field,
   Game,
   GameStatus,
+  Payment,
+  PaymentMethod,
+  PaymentStatus,
   Pelada,
   PeladaMembership,
   Player,
@@ -52,6 +56,7 @@ interface AppState {
   teamPlayers: TeamPlayer[];
   ratings: Rating[];
   punishments: Punishment[];
+  payments: Payment[];
   matchQueue: Record<string, string[]>; // gameId -> ordered team ids
 
   // chamada / presença
@@ -80,6 +85,7 @@ interface AppState {
     maxPlayers: number;
     matchMinutes: number;
     drawMethod: DrawMethod;
+    defaultFieldCost: number | null;
   }) => Schedule;
   addGameFromSchedule: (scheduleId: string, scheduledAt: string) => Game;
   updateGameMaxPlayers: (gameId: string, maxPlayers: number) => void;
@@ -96,6 +102,14 @@ interface AppState {
   setPlayerCardStyle: (playerId: string, cardStyleId: string | null) => void;
   setPlayerCardBackground: (playerId: string, cardBackgroundUrl: string | null) => void;
   updatePeladaInfo: (peladaId: string, input: { name: string; description: string | null }) => void;
+
+  // premium (assinatura individual simulada)
+  upgradeToPremium: (playerId: string) => void;
+  cancelPremium: (playerId: string) => void;
+
+  // rateio ("vaquinha") do custo da quadra
+  setGameFieldCost: (gameId: string, fieldCost: number | null) => void;
+  setPaymentStatus: (gameId: string, playerId: string, status: PaymentStatus, method?: PaymentMethod) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -113,6 +127,7 @@ export const useAppStore = create<AppState>()(
       teamPlayers: MOCK_TEAM_PLAYERS,
       ratings: MOCK_RATINGS,
       punishments: MOCK_PUNISHMENTS,
+      payments: MOCK_PAYMENTS,
       matchQueue: {},
 
       setAttendance: (gameId, playerId, status) => {
@@ -224,6 +239,7 @@ export const useAppStore = create<AppState>()(
           maxPlayers: input.maxPlayers,
           matchMinutes: input.matchMinutes,
           drawMethod: input.drawMethod,
+          defaultFieldCost: input.defaultFieldCost,
           active: true,
           createdBy: get().currentPlayerId,
         };
@@ -245,6 +261,7 @@ export const useAppStore = create<AppState>()(
           matchMinutes: schedule.matchMinutes,
           drawMethod: schedule.drawMethod,
           status: 'open',
+          fieldCost: schedule.defaultFieldCost,
           createdBy: get().currentPlayerId,
           createdAt: nowIso(),
         };
@@ -321,6 +338,42 @@ export const useAppStore = create<AppState>()(
           peladas: state.peladas.map((p) => (p.id === peladaId ? { ...p, ...input } : p)),
         }));
       },
+
+      upgradeToPremium: (playerId) => {
+        set((state) => ({
+          players: state.players.map((p) => (p.id === playerId ? { ...p, isPremium: true, premiumSince: nowIso() } : p)),
+        }));
+      },
+
+      cancelPremium: (playerId) => {
+        set((state) => ({
+          players: state.players.map((p) => (p.id === playerId ? { ...p, isPremium: false, premiumSince: null } : p)),
+        }));
+      },
+
+      setGameFieldCost: (gameId, fieldCost) => {
+        set((state) => ({ games: state.games.map((g) => (g.id === gameId ? { ...g, fieldCost } : g)) }));
+      },
+
+      setPaymentStatus: (gameId, playerId, status, method) => {
+        set((state) => {
+          const existing = state.payments.find((p) => p.gameId === gameId && p.playerId === playerId);
+          const paidAt = status === 'paid' ? nowIso() : null;
+          if (existing) {
+            return {
+              payments: state.payments.map((p) =>
+                p.id === existing.id ? { ...p, status, method: method ?? p.method, paidAt } : p,
+              ),
+            };
+          }
+          return {
+            payments: [
+              ...state.payments,
+              { id: uid(), gameId, playerId, status, method: method ?? null, paidAt } satisfies Payment,
+            ],
+          };
+        });
+      },
     }),
     {
       name: 'pelada-app-storage',
@@ -337,6 +390,7 @@ export const useAppStore = create<AppState>()(
         teamPlayers: state.teamPlayers,
         ratings: state.ratings,
         punishments: state.punishments,
+        payments: state.payments,
         matchQueue: state.matchQueue,
         currentPlayerId: state.currentPlayerId,
       }),

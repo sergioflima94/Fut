@@ -1,6 +1,7 @@
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AdBanner } from '@/components/AdBanner';
 import { PlayerCard } from '@/components/PlayerCard';
 import { colors, spacing } from '@/constants/theme';
 import { computeAllOveralls } from '@/lib/ratings';
@@ -9,6 +10,8 @@ import { useAppStore } from '@/store/useAppStore';
 export default function JogadoresScreen() {
   const players = useAppStore((s) => s.players);
   const ratings = useAppStore((s) => s.ratings);
+  const currentPlayerId = useAppStore((s) => s.currentPlayerId);
+  const isPremium = useAppStore((s) => s.players.find((p) => p.id === currentPlayerId)?.isPremium ?? false);
   const overalls = computeAllOveralls(
     players.map((p) => p.id),
     ratings,
@@ -25,6 +28,7 @@ export default function JogadoresScreen() {
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={!isPremium ? <AdBanner /> : null}
         renderItem={({ item }) => (
           <View style={styles.cardWrap}>
             <PlayerCard

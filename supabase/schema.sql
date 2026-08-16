@@ -16,6 +16,8 @@ create table players (
   avatar_url text,
   card_style_id text,
   card_background_url text,
+  is_premium boolean not null default false,
+  premium_since timestamptz,
   phone text,
   preferred_position text not null default 'line' check (preferred_position in ('goalkeeper', 'line')),
   created_at timestamptz not null default now()
@@ -65,6 +67,7 @@ create table schedules (
   max_players int not null default 16,
   match_minutes int not null default 10,
   draw_method text not null default 'rating' check (draw_method in ('arrival', 'random', 'rating')),
+  default_field_cost numeric(10, 2),
   active boolean not null default true,
   created_by uuid not null references players (id)
 );
@@ -80,6 +83,7 @@ create table games (
   match_minutes int not null default 10,
   draw_method text not null default 'rating' check (draw_method in ('arrival', 'random', 'rating')),
   status text not null default 'open' check (status in ('open', 'full', 'teams_drawn', 'in_progress', 'finished', 'cancelled')),
+  field_cost numeric(10, 2),
   created_by uuid not null references players (id),
   created_at timestamptz not null default now()
 );
@@ -136,6 +140,17 @@ create table ratings (
   check (rater_player_id <> rated_player_id)
 );
 
+-- Rateio ("vaquinha") do custo da quadra: 1 linha por jogador confirmado em jogos com field_cost definido.
+create table payments (
+  id uuid primary key default gen_random_uuid(),
+  game_id uuid not null references games (id) on delete cascade,
+  player_id uuid not null references players (id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'paid', 'waived')),
+  method text check (method in ('pix', 'cash', 'card')),
+  paid_at timestamptz,
+  unique (game_id, player_id)
+);
+
 create table punishments (
   id uuid primary key default gen_random_uuid(),
   pelada_id uuid not null references peladas (id) on delete cascade,
@@ -177,6 +192,7 @@ alter table team_players enable row level security;
 alter table match_turns enable row level security;
 alter table ratings enable row level security;
 alter table punishments enable row level security;
+alter table payments enable row level security;
 
 create function is_member_of_pelada(p_pelada_id uuid) returns boolean as $$
   select exists (
@@ -264,3 +280,14 @@ create policy "ratings_insert_self" on ratings for insert with check (
 
 create policy "punishments_select_members" on punishments for select using (is_member_of_pelada(pelada_id));
 create policy "punishments_write_admins" on punishments for all using (is_admin_of_pelada(pelada_id));
+
+-- payments: membros da pelada veem o rateio; o próprio jogador (ou um admin) marca/atualiza o pagamento.
+create policy "payments_select_members" on payments for select using (
+  exists (select 1 from games g where g.id = game_id and is_member_of_pelada(g.pelada_id))
+);
+create policy "payments_write_self_or_admin" on payments for all using (
+  exists (
+    select 1 from games g join players p on p.id = payments.player_id
+    where g.id = game_id and (p.auth_user_id = auth.uid() or is_admin_of_pelada(g.pelada_id))
+  )
+);

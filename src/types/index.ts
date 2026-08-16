@@ -28,6 +28,9 @@ export interface Player {
   cardStyleId: string | null;
   /** Foto escolhida pelo jogador como fundo da carta. Quando definida, tem prioridade sobre cardStyleId. */
   cardBackgroundUrl: string | null;
+  /** Assinante do plano Premium: sem anúncios e com estilos/fundo de carta exclusivos liberados. */
+  isPremium: boolean;
+  premiumSince: string | null;
   createdAt: string;
 }
 
@@ -89,6 +92,8 @@ export interface Schedule {
   maxPlayers: number;
   matchMinutes: number;
   drawMethod: DrawMethod;
+  /** Custo padrão da quadra, usado para calcular o rateio ("vaquinha") de cada jogo gerado. null = sem rateio. */
+  defaultFieldCost: number | null;
   active: boolean;
   createdBy: UUID;
 }
@@ -114,6 +119,8 @@ export interface Game {
   matchMinutes: number; // duração de cada "rodada" antes da troca
   drawMethod: DrawMethod;
   status: GameStatus;
+  /** Custo total da quadra nesse jogo. null = sem rateio (cada um resolve por fora). */
+  fieldCost: number | null;
   createdBy: UUID;
   createdAt: string;
 }
@@ -194,4 +201,17 @@ export interface PlayerPunishmentSummary {
   isSuspended: boolean;
   suspendedRemainingGames: number;
   history: Punishment[];
+}
+
+export type PaymentStatus = 'pending' | 'paid' | 'waived';
+export type PaymentMethod = 'pix' | 'cash' | 'card';
+
+/** Rateio ("vaquinha") do custo da quadra: 1 registro por jogador confirmado em um Game com fieldCost definido. */
+export interface Payment {
+  id: UUID;
+  gameId: UUID;
+  playerId: UUID;
+  status: PaymentStatus;
+  method: PaymentMethod | null;
+  paidAt: string | null;
 }
